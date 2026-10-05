@@ -2895,18 +2895,17 @@ void displaygraph(const giac::gen & ge){
       return;
     }
     if (ss==2 && strcmp(s,"pi")==0){
+      // like the 2D input's pi (mathinput_glue.cc): a bar on two legs, digit height, in a
+      // 10 px cell (6 in the small font; text_width agrees), legs on the digits' baseline
+      const bool big=fontsize>=16;
+      const int w=big?10:6,yb=y-(big?4:3),top=yb-(big?8:6),s2=big?2:1;
       if (mode==4){
-	drawRectangle(x,y+2-fontsize,fontsize,fontsize,c);
+	drawRectangle(x,top-2,w,yb-top+3,c);
 	c=bg;
       }
-      // legs end on the digits' baseline (they went 5 px lower), bar 12 px instead of 16
-      const int yb=y+1-fontsize/4,xe=x+(2*fontsize)/3+3;
-      draw_line(x+fontsize/3-1,yb,x+fontsize/3,y+6-fontsize,c);
-      draw_line(x+fontsize/3-2,yb,x+fontsize/3-1,y+6-fontsize,c);
-      draw_line(x+2*fontsize/3,yb,x+2*fontsize/3,y+6-fontsize,c);
-      draw_line(x+2*fontsize/3+1,yb,x+2*fontsize/3+1,y+6-fontsize,c);
-      draw_line(x+2,y+6-fontsize,xe,y+6-fontsize,c);
-      draw_line(x+2,y+5-fontsize,xe,y+5-fontsize,c);
+      drawRectangle(x+1,top,w-2,s2,c);
+      drawRectangle(x+(big?2:1),top,s2,yb-top,c);
+      drawRectangle(x+w-2-s2-(big?1:0),top,s2,yb-top,c);
       return;
     }
     if (fontsize>=16){
@@ -2922,6 +2921,8 @@ void displaygraph(const giac::gen & ge){
   
   
   int text_width(int fontsize,const char * s){
+    if (s[0]=='p' && s[1]=='i' && !s[2]) // drawn by text_print, not by the font
+      return fontsize>=16?10:6;
     if (fontsize>=16)
       return 8*strlen(s);
     else
