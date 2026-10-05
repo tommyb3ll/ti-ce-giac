@@ -23,6 +23,7 @@ namespace xcas {
   // Apply op to args, interrupting the computation after `seconds` (RTC, 1 s resolution,
   // so the real budget is seconds-1..seconds). On timeout returns args and sets timeout.
   bool has_radical(const giac::gen & g);
+  giac::gen merge_sqrt(const giac::gen & g,const giac::context * contextptr); // p*sqrt(u), u|p -> (p/u)*u^(3/2)
   // maximum "size" of symbolics displayed in an Equation (pretty print)
   extern unsigned max_prettyprint_equation;
   // matrix select

@@ -1870,6 +1870,138 @@ void displaygraph(const giac::gen & ge){
     return has_radical(f);
   }
 
+  // a term written with a leading minus: -4, -25*x^2, -x
+  static bool leading_minus(const gen & t,GIAC_CONTEXT){
+    if (t.type<=_ZINT || t.type==_FRAC)
+      return is_strictly_positive(-t,contextptr);
+    if (t.is_symb_of_sommet(at_neg))
+      return true;
+    if (t.is_symb_of_sommet(at_prod) && t._SYMBptr->feuille.type==_VECT && !t._SYMBptr->feuille._VECTptr->empty())
+      return leading_minus(t._SYMBptr->feuille._VECTptr->front(),contextptr);
+    return false;
+  }
+
+  // p*sqrt(u) where the polynomial u divides p: (p/u^k)*u^(k+1/2), the form a u-substitution
+  // gives. int(50x^3*sqrt(1-25x^2)) is -2*(75*x^2+2)*(1-25*x^2)^(3/2)/375, not
+  // 2*(75*x^2+2)*(5*x+1)*(5*x-1)*sqrt(-25*x^2+1)/375. Exact; g itself when it does not apply
+  // (no single square root of a polynomial in one variable, or u does not divide p).
+  gen merge_sqrt(const gen & g,GIAC_CONTEXT){
+    if (g.type!=_SYMB || taille(g,200)>=200)
+      return g;
+    vecteur v=lop(g,at_pow),vs=lop(g,at_sqrt);
+    gen r,u; // the radical as it appears in g, and its radicand
+    int er=0; // 2*the radical's exponent: 1 (sqrt(u)) or -1 (u^(-1/2))
+    for (int pass=0;pass<2;++pass){
+      const vecteur & w=pass?vs:v;
+      for (const_iterateur it=w.begin();it!=w.end();++it){
+        const gen & f=it->_SYMBptr->feuille;
+        gen b=f;
+        int e=1;
+        if (!pass){
+          if (f.type!=_VECT || f._VECTptr->size()!=2 || f._VECTptr->back().type!=_FRAC)
+            continue; // integer powers
+          const gen & ex=f._VECTptr->back();
+          if (ex==plus_one_half)
+            e=1;
+          else if (ex==minus_one_half)
+            e=-1;
+          else
+            return g; // another fractional power
+          b=f._VECTptr->front();
+        }
+        if (!is_zero(u) && (b!=u || e!=er))
+          return g; // two different radicals
+        u=b;
+        r=*it;
+        er=e;
+      }
+    }
+    if (is_zero(u))
+      return g;
+    vecteur ids(lidnt(u));
+    if (ids.size()!=1 || !is_constant_wrt(_denom(u,contextptr),ids.front(),contextptr))
+      return g;
+    const gen x=ids.front();
+    // g = q*u^(e2/2), q rational: r is a factor of g (r*...) or of its denominator (.../r)
+    int e2=er;
+    gen q=ratnormal(g/r,contextptr);
+    if (is_undef(q) || has_radical(q)){
+      e2=-er;
+      q=ratnormal(g*r,contextptr);
+      if (is_undef(q) || has_radical(q))
+        return g;
+    }
+    gen n=_numer(q,contextptr),d=_denom(q,contextptr);
+    int k=0,j=0; // u^k divides n, u^j divides d (not both: q is normalized)
+    for (;k<4;++k){
+      gen C=_quorem(makesequence(n,u,x),contextptr);
+      if (C.type!=_VECT || C._VECTptr->size()!=2 || !is_zero(C._VECTptr->back()))
+        break;
+      n=C._VECTptr->front();
+    }
+    for (;!k && j<4;++j){
+      gen C=_quorem(makesequence(d,u,x),contextptr);
+      if (C.type!=_VECT || C._VECTptr->size()!=2 || !is_zero(C._VECTptr->back()))
+        break;
+      d=C._VECTptr->front();
+    }
+    // nothing divided: giac already cancelled the radical (q=3*x for (3*x^3+3*x)/sqrt(x^2+1));
+    // the rewritten form is then kept only if smaller (3*x*sqrt(x^2+1)), see the end
+    const bool divided=k || j;
+    e2+=2*(k-j); // odd, never 0
+    gen uu=u; // written without a leading minus: 1-25*x^2
+    if (u.is_symb_of_sommet(at_plus) && u._SYMBptr->feuille.type==_VECT){
+      vecteur t=*u._SYMBptr->feuille._VECTptr;
+      if (t.size()>=2 && leading_minus(t.front(),contextptr) && !leading_minus(t.back(),contextptr)){
+        vreverse(t.begin(),t.end());
+        uu=symbolic(at_plus,gen(t,_SEQ__VECT));
+      }
+    }
+    gen p=n;
+    if (!is_constant_wrt(n,x,contextptr)){ // over Q: 3*x^2-2, not (x+sqrt(6)/3)*(3*x-sqrt(6))
+      bool & ws=withsqrt(contextptr);
+      const bool save=ws;
+      ws=false;
+      p=_factor(n,contextptr);
+      ws=save;
+      if (is_undef(p) || p.type==_STRNG)
+        p=n;
+    }
+    // one flat product p1*...*u^(e2/2)*inv(d), the sign in front: -(2*(75*x^2+2)*...)/375
+    bool neg=false;
+    if (p.is_symb_of_sommet(at_neg)){
+      neg=true;
+      p=p._SYMBptr->feuille;
+    }
+    vecteur fs;
+    if (p.is_symb_of_sommet(at_prod) && p._SYMBptr->feuille.type==_VECT)
+      fs=*p._SYMBptr->feuille._VECTptr;
+    else
+      fs.push_back(p);
+    if (!fs.empty() && fs.front().type<=_ZINT && is_strictly_positive(-fs.front(),contextptr)){
+      fs.front()=-fs.front();
+      neg=!neg;
+    }
+    if (!fs.empty() && is_one(fs.front()))
+      fs.erase(fs.begin());
+    if (leading_minus(d,contextptr)){ // -x/sqrt(1-x^2), not x/((-1)*sqrt(1-x^2))
+      d=ratnormal(-d,contextptr);
+      neg=!neg;
+    }
+    fs.push_back(e2>0?symb_pow(uu,fraction(e2,2)):symb_inv(symb_pow(uu,fraction(-e2,2))));
+    if (!is_one(d))
+      fs.push_back(symb_inv(d));
+    gen res=fs.size()==1?fs.front():symbolic(at_prod,gen(fs,_SEQ__VECT));
+    if (neg)
+      res=symb_neg(res);
+    if (!divided){
+      const int tr=taille(res,200),tg=taille(g,200);
+      if (tr>tg || (tr==tg && uu==u)) // same size: only for 1-x^2 instead of -x^2+1
+        return g;
+    }
+    return res;
+  }
+
   // Result viewer: the whole result is selected (copy, edit and menus act on all of it) but
   // drawn without highlight until the first arrow key, like a plain NumWorks/Symbolab result.
   static bool eqw_hide_sel=false;
@@ -2242,6 +2374,8 @@ void displaygraph(const giac::gen & ge){
           res=(*forms[form_idx-1])(form_orig,contextptr);
           if (is_undef(res) || res.type==_STRNG)
             res=geq;
+          else if (forms[form_idx-1]==at_factor)
+            res=merge_sqrt(res,contextptr); // (1-25*x^2)^(3/2), not (5*x+1)*(5*x-1)*sqrt(...)
         }
         if (!(res==geq)){ // new layout for the new form, placed like the initial one
           geq=res;

@@ -993,13 +993,9 @@ namespace giac {
 	   ( *			m=sqrt[y]-sqrt[a]*x	           * )
 	   ( * 			dx/sqrt[y]=2*dm/[b-2*sqrt[a]*m]	   * )
       */
-      if (
-#ifdef XLIGHT
-          0
-#else
-          d==2 && is_constant_wrt(fr_d,gen_x,contextptr)
-#endif
-          ){
+      // KhiCAS fork: enabled in the XLIGHT build too: sqrt of a quadratic is the trig
+      // substitution / arc length integral of a calculus course
+      if (d==2 && is_constant_wrt(fr_d,gen_x,contextptr)){
 	// write e as alpha+beta*sqrt(argument)
 	identificateur tmpx(" x");
 	gen e1=complex_subst(e,sqrt(argument,contextptr),tmpx,contextptr);
