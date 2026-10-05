@@ -3119,6 +3119,10 @@ void displaygraph(const giac::gen & ge){
     return false; // function call, fraction, sqrt...: starts with a name or a bar
   }
   // the radical sign already groups its argument: no parenthesis around sqrt factors ((sqrt 2) -> sqrt 2)
+  // relations bind loosest: their operands never need parentheses (x=-1, not x=(-1))
+  static bool eqw_relop(const unary_function_ptr & u){
+    return u==at_equal || u==at_equal2 || u==at_same || u==at_different || u==at_inferieur_strict || u==at_inferieur_egal || u==at_superieur_strict || u==at_superieur_egal;
+  }
   static bool eqw_need_par(const gen & g){
     return g!=at_sqrt && need_parenthesis(g);
   }
@@ -3566,8 +3570,8 @@ void displaygraph(const giac::gen & ge){
       int currenth=h,largeur=0;
       iterateur itprec=v.begin();
       h=0;
-      if (u==at_plus){ // op without parenthesis
-	if (it->type==_VECT && !it->_VECTptr->empty() && it->_VECTptr->back().type==_EQW && it->_VECTptr->back()._EQWptr->g==at_equal)
+      if (u==at_plus || eqw_relop(u)){ // op without parenthesis
+	if (u==at_plus && it->type==_VECT && !it->_VECTptr->empty() && it->_VECTptr->back().type==_EQW && it->_VECTptr->back()._EQWptr->g==at_equal)
 	  ;
 	else {
 	  llp=0;
@@ -3766,8 +3770,15 @@ void displaygraph(const giac::gen & ge){
 	Equation_vertical_adjust(tmp.dy,tmp.y,h,y);
       }
       gen mkvect(at_makevector);
-      if (g.subtype==_SEQ__VECT)
+      if (g.subtype==_SEQ__VECT){
 	mkvect=at_makesuite;
+	// a sequence of equations (solutions x=-2, x=2) is drawn without parentheses
+	const_iterateur e=g._VECTptr->begin();
+	while (e!=g._VECTptr->end() && e->is_symb_of_sommet(at_equal))
+	  ++e;
+	if (e==g._VECTptr->end())
+	  mkvect.subtype=_PRINT__VECT;
+      }
       else
 	mkvect.subtype=g.subtype;
       v.push_back(eqwdata(x,h,0,y,a,mkvect,0));
@@ -3920,7 +3931,7 @@ void displaygraph(const giac::gen & ge){
 	return;
       }
       if (u==at_makesuite){
-	bool paren=v.size()!=2; // Sequences with 1 arg don't show parenthesis
+	bool paren=v.size()!=2 && oper.subtype!=_PRINT__VECT; // 1 arg or equations: no parenthesis
 	int pfontsize=max(fontsize,(fontsize+(w.baseline-w.y))/2);
 	if (paren && x0<rightx)
 	  text_print(pfontsize,"(",eqx+x0-x-int(text_width(fontsize,("(")))/2,eqy+y-w.baseline,text_color,background,mode);
@@ -4133,7 +4144,7 @@ void displaygraph(const giac::gen & ge){
 	return;
       }
       // write first open parenthesis
-      if (u==at_plus && tmp.g!=at_equal)
+      if ((u==at_plus && tmp.g!=at_equal) || eqw_relop(u))
 	parenthesis=false;
       else {
 	if (parenthesis && eqw_need_par(tmp.g)){
