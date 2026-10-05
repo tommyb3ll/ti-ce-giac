@@ -1411,6 +1411,23 @@ double my_atan(double arg) {
       return symb_prog3(a,0,sqrt(b,contextptr));
     if (e.is_inv())
       return inv(sqrt(e._SYMBptr->feuille,contextptr),contextptr);
+    if (e.is_symb_of_sommet(at_prod) && e._SYMBptr->feuille.type==_VECT){
+      // positive rational factor out of the radical: sqrt(y/4) -> sqrt(y)/2, not sqrt(1/4)*sqrt(y)
+      const vecteur & pv=*e._SYMBptr->feuille._VECTptr;
+      gen c(1);
+      vecteur rest;
+      for (unsigned i=0;i<pv.size();++i){
+	const gen & f=pv[i];
+	if ((f.type & ~_ZINT)==0 || f.type==_FRAC) // _INT_ or _ZINT (not a 3-way ==: ez80-clang i11 mask bug)
+	  c=c*f;
+	else if (f.is_inv() && (f._SYMBptr->feuille.type & ~_ZINT)==0)
+	  c=c/f._SYMBptr->feuille;
+	else
+	  rest.push_back(f);
+      }
+      if (!rest.empty() && !is_one(c) && is_strictly_positive(c,contextptr))
+	return sqrt(c,contextptr)*sqrt(rest.size()==1?rest.front():symb_prod(rest),contextptr);
+    }
     if (e.type==_SYMB){
       vecteur v=lvar(e);
       if (v.size()==1 && v.front().is_pow() && v.front()._SYMBptr->feuille[1]==plus_one_half && is_integer(v.front()._SYMBptr->feuille[0])){

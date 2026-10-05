@@ -2905,12 +2905,14 @@ void displaygraph(const giac::gen & ge){
 	drawRectangle(x,y+2-fontsize,fontsize,fontsize,c);
 	c=bg;
       }
-      draw_line(x+fontsize/3-1,y+1,x+fontsize/3,y+6-fontsize,c);
-      draw_line(x+fontsize/3-2,y+1,x+fontsize/3-1,y+6-fontsize,c);
-      draw_line(x+2*fontsize/3,y+1,x+2*fontsize/3,y+6-fontsize,c);
-      draw_line(x+2*fontsize/3+1,y+1,x+2*fontsize/3+1,y+6-fontsize,c);
-      draw_line(x+2,y+6-fontsize,x+fontsize,y+6-fontsize,c);
-      draw_line(x+2,y+5-fontsize,x+fontsize,y+5-fontsize,c);
+      // legs end on the digits' baseline (they went 5 px lower), bar 12 px instead of 16
+      const int yb=y+1-fontsize/4,xe=x+(2*fontsize)/3+3;
+      draw_line(x+fontsize/3-1,yb,x+fontsize/3,y+6-fontsize,c);
+      draw_line(x+fontsize/3-2,yb,x+fontsize/3-1,y+6-fontsize,c);
+      draw_line(x+2*fontsize/3,yb,x+2*fontsize/3,y+6-fontsize,c);
+      draw_line(x+2*fontsize/3+1,yb,x+2*fontsize/3+1,y+6-fontsize,c);
+      draw_line(x+2,y+6-fontsize,xe,y+6-fontsize,c);
+      draw_line(x+2,y+5-fontsize,xe,y+5-fontsize,c);
       return;
     }
     if (fontsize>=16){
@@ -3207,6 +3209,11 @@ void displaygraph(const giac::gen & ge){
     }
     if (u==at_sqrt)
       return Equation_compute_size(symb_pow(arg,plus_one_half),a,windowhsize,contextptr);
+    if (u==at_exp){ // e^x, not exp(x); the base stays exp(1) so that edits still evaluate
+      if (is_one(arg))
+        return eqwdata(int(text_width(a.fontsize,"e")),a.fontsize,0,0,a,g);
+      return Equation_compute_size(symb_pow(symbolic(at_exp,plus_one),arg),a,windowhsize,contextptr);
+    }
     if (u==at_division){
       if (arg.type!=_VECT || arg._VECTptr->size()!=2)
 	return Equation_compute_size(arg,a,windowhsize,contextptr);
@@ -3550,7 +3557,7 @@ void displaygraph(const giac::gen & ge){
 	gtmp=*it;
       // unary op, shift arg position horizontally
       eqwdata vv=Equation_total_size(gtmp);
-      bool paren = u!=at_neg || (vv.g!=at_prod && need_parenthesis(vv.g)) ;
+      bool paren = u!=at_neg || (vv.g!=at_prod && eqw_need_par(vv.g)) ; // -sqrt(2), not -(sqrt(2))
       x=ls+(paren?llp:0);
       gen tmp=gtmp; Equation_translate(tmp,x,0);
       x=x+vv.dx+(paren?lrp:0);
@@ -3818,7 +3825,7 @@ void displaygraph(const giac::gen & ge){
     int fontsize=e.eqw_attributs.fontsize;
     int text_color=COLOR_BLACK;
     int background=COLOR_WHITE;
-    string s=gg.type==_STRNG?*gg._STRNGptr:gg.print(contextptr);
+    string s=gg.type==_STRNG?*gg._STRNGptr:(gg.is_symb_of_sommet(at_exp)?string("e"):gg.print(contextptr)); // exp(1): see Equation_compute_symb_size
     if (gg.type==_IDNT && !s.empty() && s[0]=='_')
       s=s.substr(1,s.size()-1);
     // if (gg==cst_pi){      s="p";      s[0]=(unsigned char)129;    }
@@ -4116,7 +4123,7 @@ void displaygraph(const giac::gen & ge){
       if ( (itend-it==1) && ( (u==at_neg) 
 			      || (u==at_plus) // uncommented for +infinity
 			      ) ){ 
-	if ( (u==at_neg &&need_parenthesis(tmp.g) && tmp.g!=at_prod)){
+	if ( (u==at_neg &&eqw_need_par(tmp.g) && tmp.g!=at_prod)){
 	  if (tmp.x-lpsize<rightx)
 	    text_print(fontsize,"(",eqx+tmp.x-x-lpsize,eqy+y-tmp.baseline,text_color,background,mode);
 	  if (tmp.x+tmp.dx<rightx)
