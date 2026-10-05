@@ -23,6 +23,7 @@
 #include "main.h"
 #include "file.h"
 #include <sys/lcd.h>
+#include <sys/rtc.h>
 
 extern giac::context * contextptr;
 
@@ -1850,8 +1851,37 @@ void displaygraph(const giac::gen & ge){
     return true;
   }
 
+  // Time budget: clock() never advances in the app, the RTC is used (seconds of the day).
+  static int timed_start,timed_budget;
+  static int rtc_seconds_of_day(){
+    return rtc_Seconds+60*(rtc_Minutes+60*int(rtc_Hours)); // < 86400, fits a 24-bit int
+  }
+  static bool timed_expired(){
+    static unsigned char n;
+    if (++n & 15) // control_c() polls the hook very often (~500/s): read the RTC every 16 calls
+      return false;
+    int elapsed=rtc_seconds_of_day()-timed_start;
+    if (elapsed<0)
+      elapsed+=86400; // midnight
+    return elapsed>=timed_budget;
+  }
+  giac::gen timed_apply(const giac::unary_function_ptr * op,const giac::gen & args,int seconds,bool & timeout,const giac::context * contextptr){
+    timed_budget=seconds;
+    timed_start=rtc_seconds_of_day();
+    bool (*saved)()=giac::control_c_hook;
+    giac::control_c_hook=timed_expired;
+    giac::gen res=(*op)(args,contextptr);
+    giac::control_c_hook=saved;
+    timeout=giac::interrupted;
+    giac::ctrl_c=giac::kbd_interrupted=giac::interrupted=false;
+    return timeout?args:res;
+  }
+
   giac::gen eqw(const giac::gen & ge,bool editable){
     bool edited=false;
+    int form_idx=-1; // F4 forms cycling state, see below
+    giac::gen form_orig,form_last;
+    std::string form_status; // shown in the status line while cycling forms
     freeze=giac::ctrl_c=giac::kbd_interrupted=giac::interrupted=false;
 #ifdef CURSOR
     Cursor_SetFlashOff();
@@ -1952,6 +1982,8 @@ void displaygraph(const giac::gen & ge){
       Printmini(0,C58,menu.c_str(),MINI_REV);
       // status, clock, 
       set_xcas_status();
+      if (!form_status.empty())
+        statuslinemsg(form_status.c_str());
       ck_getkey((int *)&key);
       //cout << key << '\n';
       if (key==KEY_CTRL_SD){
@@ -2174,6 +2206,46 @@ void displaygraph(const giac::gen & ge){
         // workaround for infinitiy
         if (strlen(adds)>=2 && adds[0]=='o' && adds[1]=='o')
           key=KEY_CTRL_F5;      
+      }
+      if (key==KEY_CTRL_F4 && !alph && keyflag!=1 && !listormat){
+        // F4: cycle the whole result through equivalent forms. Each form is computed from the
+        // original result, so the decimal form can't make the next ones inexact; each
+        // computation gets a 3 s budget, a form that times out or equals the current one is skipped.
+        static const giac::unary_function_ptr * const forms[]={at_simplify,at_ratnormal,at_factor,at_expand,at_evalf};
+        static const char * const formnames[]={"original","simplified","one fraction","factored","expanded","decimal"};
+        static const char * const formnames_fr[]={"originale","simplifiee","une fraction","factorisee","developpee","decimale"};
+        const int nforms=sizeof(forms)/sizeof(forms[0]);
+        if (form_idx<0){
+          form_orig=geq;
+          form_idx=0;
+        }
+        gen res=geq;
+        for (int tries=0;tries<=nforms && res==geq;++tries){
+          form_idx=(form_idx+1)%(nforms+1);
+          if (!form_idx){
+            res=form_orig;
+            continue;
+          }
+          statuslinemsg(lang?"calcul...":"computing...",COLOR_RED);
+          bool timeout;
+          res=timed_apply(forms[form_idx-1],form_orig,3,timeout,contextptr);
+          if (timeout || is_undef(res) || res.type==_STRNG)
+            res=geq;
+        }
+        if (!(res==geq)){ // new layout for the new form, placed like the initial one
+          geq=res;
+          edited=true;
+          eq.data=0;
+          eq.data=xcas::Equation_compute_size(geq,eq.attr,LCD_WIDTH_PX,contextptr);
+          eqdata=xcas::Equation_total_size(eq.data);
+          dx=(eqdata.dx-LCD_WIDTH_PX)/2;
+          dy=LCD_HEIGHT_PX-2*STATUS_AREA_PX+eqdata.y;
+          xcas::Equation_select(eq.data,true);
+          xcas::eqw_select_down(eq.data);
+          firstrun=-1; // force 2 displays
+        }
+        form_status=string(lang?"forme: ":"form: ")+(lang?formnames_fr:formnames)[form_idx]+(lang?"   F4: suivante":"   F4: next");
+        continue;
       }
       if (key==KEY_CTRL_F4){
         adds=alph?"regroup":(keyflag==1?"evalf":"eval");
