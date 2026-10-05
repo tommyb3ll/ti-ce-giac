@@ -148,13 +148,14 @@ namespace giac {
     //kb_ClearOnLatch();
     //kb_DisableOnLatch();
   }
+  bool (*control_c_hook)()=0;
   void control_c(){
     //static int count=0;
     //if (ctrl_c) return;
     //++count;
     //if (kb_Data[1]) dbg_printf("control_c count=%i kbd=%i\n",count,kb_Data[1]);
     if ( //(count & 0x1f==0) &&
-         kb_Data[6]==64){
+         kb_Data[6]==64 || (control_c_hook && control_c_hook())){
       // dbg_printf("control_c interrupt\n",count);
       // kb_ClearOnLatch();
       ctrl_c=true; interrupted=true;

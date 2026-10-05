@@ -290,6 +290,11 @@ Boolean isLegalUTF8Sequence(const UTF8 *source, const UTF8 *sourceEnd);
   // note that ctrl_c=false was removed, should be done before calling eval
 #if defined (NSPIRE) || defined(FXCG) || defined TICE
   void control_c();
+#ifdef TICE
+  // optional extra interrupt source polled by control_c(), set by the app
+  // (KhiCAS: time budget of the automatic simplification of results)
+  extern bool (*control_c_hook)();
+#endif
 #elif defined FIR
 #define control_c()
 #else
