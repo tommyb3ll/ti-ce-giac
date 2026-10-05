@@ -2406,7 +2406,7 @@ namespace giac {
       arg1=w;
     }
     if (arg1.type!=_VECT && !is_equal(arg1) && !is_inequation(arg1))
-      *logptr(contextptr) << gettext("Warning, argument is not an equation, solving ") << arg1 << "=0" << "\n";
+      ; // KhiCAS CE: no "argument is not an equation" warning, solve(x^2-4,x) is normal usage
     else {
 #if 1 // ATESTER
       if (arg1.type==_VECT && arg1._VECTptr->size()==2 && v[1].type==_VECT && v[1]._VECTptr->size()==2){
@@ -3759,7 +3759,7 @@ namespace giac {
     for (int j=1;j<5;j++,niter2 *=2, niter1 *=2){ 
       gen a;
       int b;
-      //on prend un départ au hasard (a=x0=un _DOUBLE_)
+      //on prend un dï¿½part au hasard (a=x0=un _DOUBLE_)
       // a=gen(2.0);
       if (guess_first)
 	a=j*4*(rand()/(RAND_MAX+1.0)-0.5);

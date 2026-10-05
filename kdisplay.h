@@ -52,6 +52,8 @@ namespace xcas {
   };
 
   void display(Equation &eq ,int x,int y);
+  giac::gen history_layout(const giac::gen & g,int w,int h,const giac::context * contextptr);
+  void draw_layout_at(const giac::gen & data,int X,int Y,int ymin);
   // replace selection in eq by tmp
   void replace_selection(Equation & eq,const giac::gen & tmp,giac::gen * gsel=0,const std::vector<int> * gotoptr=0);
   int eqw_select_leftright(xcas::Equation & g,bool left,int exchange=0);

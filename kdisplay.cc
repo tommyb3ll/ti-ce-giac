@@ -3169,6 +3169,21 @@ void displaygraph(const giac::gen & ge){
         ncoef=ncoef*f._FRACptr->num;
         dcoef=dcoef*f._FRACptr->den;
       }
+      else if (f.is_symb_of_sommet(at_division) && f._SYMBptr->feuille.type==_VECT && f._SYMBptr->feuille._VECTptr->size()==2){
+        // a parsed, not evaluated a/b factor (history results are re-parsed): 1/3*x^3 is x^3/3
+        down=true;
+        const gen & a=f._SYMBptr->feuille._VECTptr->front(),&d=f._SYMBptr->feuille._VECTptr->back();
+        if (a.type==_INT_ || a.type==_ZINT){
+          ncoef=ncoef*a;
+          ++nnum;
+        }
+        else
+          num.push_back(a);
+        if (d.type==_INT_ || d.type==_ZINT)
+          dcoef=dcoef*d;
+        else
+          den.push_back(d);
+      }
       else if (f.type==_INT_ || f.type==_ZINT){
         ncoef=ncoef*f;
         ++nnum;
@@ -4215,6 +4230,29 @@ void displaygraph(const giac::gen & ge){
     if (w.x<rightx){
       text_print(fontsize,s.c_str(),eqx+w.x-x,eqy+y-w.baseline,text_color,background,mode);
     }
+  }
+
+  // Results drawn in the console history (R3): the layout of g in the result font, or undef if
+  // it does not fit in w x h pixels.
+  gen history_layout(const gen & g,int w,int h,GIAC_CONTEXT){
+    if (taille(g,max_prettyprint_equation)>=max_prettyprint_equation)
+      return undef;
+    gen data=Equation_compute_size(g,attributs(18,COLOR_WHITE,COLOR_BLACK),LCD_WIDTH_PX,contextptr);
+    eqwdata e=Equation_total_size(data);
+    if (e.dx>w || e.dy>h)
+      return undef;
+    return data;
+  }
+  // draws a layout with its top-left corner at (X,Y) on the screen, nothing above ymin
+  void draw_layout_at(const gen & data,int X,int Y,int ymin){
+    static Equation * frame=0; // origin (0,0): Equation_draw only reads x(), y()
+    if (!frame)
+      frame=new Equation(0,0,0);
+    eqwdata e=Equation_total_size(data);
+    const int save=clip_ymin;
+    clip_ymin=ymin;
+    Equation_draw(data,e.x-X,Y+e.y+e.dy,RAND_MAX,0,frame);
+    clip_ymin=save;
   }
 
   Equation::Equation(int x_, int y_, const gen & g){
