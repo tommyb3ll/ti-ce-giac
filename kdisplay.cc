@@ -1877,6 +1877,16 @@ void displaygraph(const giac::gen & ge){
     return timeout?args:res;
   }
 
+  // Result viewer: the whole result is selected (copy, edit and menus act on all of it) but
+  // drawn without highlight until the first arrow key, like a plain NumWorks/Symbolab result.
+  static bool eqw_hide_sel=false;
+  // vertical scroll that centers a result that fits between the status line and the menu bar
+  // (it used to sit on the menu bar under an empty screen); taller ones keep their bottom there
+  static int eqw_start_dy(const giac::eqwdata & e){
+    if (e.dy<LCD_HEIGHT_PX-3*STATUS_AREA_PX)
+      return LCD_HEIGHT_PX/2+e.y+e.dy/2;
+    return LCD_HEIGHT_PX-2*STATUS_AREA_PX+e.y;
+  }
   giac::gen eqw(const giac::gen & ge,bool editable){
     bool edited=false;
     int form_idx=-1; // F4 forms cycling state, see below
@@ -1900,7 +1910,7 @@ void displaygraph(const giac::gen & ge){
       eq.data=xcas::Equation_compute_size(geq,eq.attr,LCD_WIDTH_PX,contextptr);
       eqdata=xcas::Equation_total_size(eq.data);
     }
-    int dx=(eqdata.dx-LCD_WIDTH_PX)/2,dy=LCD_HEIGHT_PX-2*STATUS_AREA_PX+eqdata.y;
+    int dx=(eqdata.dx-LCD_WIDTH_PX)/2,dy=eqw_start_dy(eqdata);
     if (geq.type==_VECT){
       nlines=geq._VECTptr->size();
       if (eqdata.dx>=LCD_WIDTH_PX)
@@ -1922,8 +1932,10 @@ void displaygraph(const giac::gen & ge){
     }
     if (!listormat){
       xcas::Equation_select(eq.data,true);
-      xcas::eqw_select_down(eq.data);
+      if (editable)
+        xcas::eqw_select_down(eq.data);
     }
+    eqw_hide_sel=!listormat && !editable;
     //cout << eq.data << endl;
     int firstrun=2;
     for (;;){
@@ -1985,6 +1997,11 @@ void displaygraph(const giac::gen & ge){
       if (!form_status.empty())
         statuslinemsg(form_status.c_str());
       ck_getkey((int *)&key);
+      if (eqw_hide_sel && (key==KEY_CTRL_UP || key==KEY_CTRL_DOWN || key==KEY_CTRL_LEFT || key==KEY_CTRL_RIGHT)){
+        eqw_hide_sel=false; // first arrow: show the selection, on the first subexpression
+        xcas::eqw_select_down(eq.data);
+        continue;
+      }
       //cout << key << '\n';
       if (key==KEY_CTRL_SD){
         // FIXME khicas_addins_menu(contextptr);
@@ -2239,9 +2256,9 @@ void displaygraph(const giac::gen & ge){
           eq.data=xcas::Equation_compute_size(geq,eq.attr,LCD_WIDTH_PX,contextptr);
           eqdata=xcas::Equation_total_size(eq.data);
           dx=(eqdata.dx-LCD_WIDTH_PX)/2;
-          dy=LCD_HEIGHT_PX-2*STATUS_AREA_PX+eqdata.y;
-          xcas::Equation_select(eq.data,true);
-          xcas::eqw_select_down(eq.data);
+          dy=eqw_start_dy(eqdata);
+          xcas::Equation_select(eq.data,true); // whole new form, highlight hidden again
+          eqw_hide_sel=true;
           firstrun=-1; // force 2 displays
         }
         form_status=string(lang?"forme: ":"form: ")+(lang?formnames_fr:formnames)[form_idx]+(lang?"   F4: suivante":"   F4: next");
@@ -2343,7 +2360,7 @@ void displaygraph(const giac::gen & ge){
         eqdata=xcas::Equation_total_size(eq.data);
         if (redo==1){
           dx=(eqdata.dx-LCD_WIDTH_PX)/2;
-          dy=LCD_HEIGHT_PX-2*STATUS_AREA_PX+eqdata.y;
+          dy=eqw_start_dy(eqdata);
           if (listormat) // select line l, col c
             xcas::eqw_select(eq.data,line,col,true,value);
           else {
@@ -2607,7 +2624,7 @@ void displaygraph(const giac::gen & ge){
                 }
                 eqdata=xcas::Equation_total_size(eq.data);
                 dx=(eqdata.dx-LCD_WIDTH_PX)/2;
-                dy=LCD_HEIGHT_PX-2*STATUS_AREA_PX+eqdata.y;
+                dy=eqw_start_dy(eqdata);
                 firstrun=-1; // workaround, force 2 times display
               }
             }
@@ -3086,6 +3103,86 @@ void displaygraph(const giac::gen & ge){
     y=yf;
   }
 
+  // Products are drawn without operator (2x, 4pi sqrt(2), sin(x)cos(x), (x+1)(y-1)) unless
+  // the next factor starts with a digit or a minus sign (2.3 needs a visible operator).
+  static bool eqw_starts_with_digit_or_minus(const gen & e){
+    if (e.type==_EQW){
+      const gen & g=e._EQWptr->g;
+      return g.type==_INT_ || g.type==_ZINT || g.type==_DOUBLE_ || g.type==_REAL || (g.type==_FRAC && is_strictly_positive(-g,context0)) || is_strictly_positive(-g,context0);
+    }
+    if (e.type!=_VECT || e._VECTptr->size()<2)
+      return false;
+    const gen & op=e._VECTptr->back();
+    if (op.type!=_EQW)
+      return false;
+    const gen & u=op._EQWptr->g;
+    if (u==at_neg)
+      return true;
+    if (u==at_prod || u==at_pow || u==at_plus) // infix: starts with its first operand
+      return eqw_starts_with_digit_or_minus(e._VECTptr->front());
+    return false; // function call, fraction, sqrt...: starts with a name or a bar
+  }
+  // the radical sign already groups its argument: no parenthesis around sqrt factors ((sqrt 2) -> sqrt 2)
+  static bool eqw_need_par(const gen & g){
+    return g!=at_sqrt && need_parenthesis(g);
+  }
+  static bool eqw_implicit_prod(const gen & next){
+    return !eqw_starts_with_digit_or_minus(next);
+  }
+  // Negative powers are drawn as fractions, never with a negative exponent:
+  // f=b^-k (k>0 rational) or inv(b) -> true and d=b^k (b if k=1).
+  static bool eqw_den_factor(const gen & f,gen & d){
+    if (f.is_symb_of_sommet(at_inv)){
+      d=f._SYMBptr->feuille;
+      return true;
+    }
+    if (!f.is_symb_of_sommet(at_pow) || f._SYMBptr->feuille.type!=_VECT || f._SYMBptr->feuille._VECTptr->size()!=2)
+      return false;
+    const gen & b=f._SYMBptr->feuille._VECTptr->front(),e=f._SYMBptr->feuille._VECTptr->back();
+    if ((e.type!=_INT_ && e.type!=_ZINT && e.type!=_FRAC) || !is_strictly_positive(-e,context0))
+      return false;
+    d=is_minus_one(e)?b:symb_pow(b,-e);
+    return true;
+  }
+  // product -> numerator/denominator: b^-k and inv(b) go down, a rational coefficient is split
+  // (x/8, not 1/8 x), numbers come first in the denominator. False if nothing goes down.
+  static bool eqw_prod_frac(const gen & arg,gen & n,gen & d){
+    if (arg.type!=_VECT)
+      return false;
+    const vecteur & v=*arg._VECTptr;
+    vecteur num,den;
+    gen dcoef(1),ncoef(1),b;
+    bool down=false;
+    for (size_t i=0;i<v.size();++i){
+      const gen & f=v[i];
+      if (eqw_den_factor(f,b)){
+        down=true;
+        if (b.type==_INT_ || b.type==_ZINT)
+          dcoef=dcoef*b;
+        else
+          den.push_back(b);
+      }
+      else if (f.type==_FRAC){
+        down=true;
+        ncoef=ncoef*f._FRACptr->num;
+        dcoef=dcoef*f._FRACptr->den;
+      }
+      else if (f.type==_INT_ || f.type==_ZINT)
+        ncoef=ncoef*f;
+      else
+        num.push_back(f);
+    }
+    if (!down)
+      return false;
+    if (!is_one(ncoef))
+      num.insert(num.begin(),ncoef);
+    if (!is_one(dcoef))
+      den.insert(den.begin(),dcoef);
+    n=num.empty()?gen(1):(num.size()==1?num.front():symb_prod(num));
+    d=den.empty()?gen(1):(den.size()==1?den.front():symb_prod(den));
+    return true;
+  }
+
   gen Equation_compute_symb_size(const gen & g,const attributs & a,int windowhsize,GIAC_CONTEXT){
     if (g.type!=_SYMB)
       return Equation_compute_size(g,a,windowhsize,contextptr);
@@ -3118,9 +3215,27 @@ void displaygraph(const giac::gen & ge){
       tmp.type=_FRAC;
       return Equation_compute_size(tmp,a,windowhsize,contextptr);
     }
+    if (u==at_pow){
+      gen d;
+      if (eqw_den_factor(g,d))
+        return Equation_compute_size(Tfraction<gen>(plus_one,d),a,windowhsize,contextptr);
+    }
     if (u==at_prod){
       gen n,d;
-      if (rewrite_prod_inv(arg,n,d)){
+      if (eqw_prod_frac(arg,n,d) || rewrite_prod_inv(arg,n,d)){
+        if (is_one(d))
+          return Equation_compute_size(n,a,windowhsize,contextptr);
+        if ((n.type==_INT_ || n.type==_ZINT) && is_strictly_positive(-n,contextptr))
+          return Equation_compute_size(symb_neg(Tfraction<gen>(-n,d)),a,windowhsize,contextptr);
+        if (n.is_symb_of_sommet(at_prod) && n._SYMBptr->feuille.type==_VECT && !n._SYMBptr->feuille._VECTptr->empty()){
+          const vecteur & nv=*n._SYMBptr->feuille._VECTptr;
+          if ((nv.front().type==_INT_ || nv.front().type==_ZINT) && is_strictly_positive(-nv.front(),contextptr)){
+            vecteur nn(nv);
+            nn.front()=-nn.front();
+            gen np=is_one(nn.front())?(nn.size()==2?nn.back():symb_prod(vecteur(nn.begin()+1,nn.end()))):symb_prod(nn);
+            return Equation_compute_size(symb_neg(Tfraction<gen>(np,d)),a,windowhsize,contextptr);
+          }
+        }
 	if (n.is_symb_of_sommet(at_neg))
 	  return Equation_compute_size(symb_neg(Tfraction<gen>(-n,d)),a,windowhsize,contextptr);
 	return Equation_compute_size(Tfraction<gen>(n,d),a,windowhsize,contextptr);
@@ -3342,15 +3457,15 @@ void displaygraph(const giac::gen & ge){
       else
 	x+=vv.dx+1;
       int arg1dy=vv.dy,arg1y=vv.y;
-      if (a.fontsize>=16){
+      if (a.fontsize>=16){ // exponent in the small font, raised half the base height: a real superscript
 	attributs aa(a);
-	aa.fontsize -= 2;
+	aa.fontsize = 12;
 	varg=Equation_compute_size(arg._VECTptr->back(),aa,windowhsize,contextptr);
       }
       else
 	varg=Equation_compute_size(arg._VECTptr->back(),a,windowhsize,contextptr);
       vv=Equation_total_size(varg);
-      Equation_translate(varg,x,arg1y+(3*arg1dy)/4-vv.y);
+      Equation_translate(varg,x,arg1y+arg1dy/2-vv.y);
       res.push_back(varg);
       vv=Equation_total_size(varg);
       Equation_vertical_adjust(vv.dy,vv.y,h,y);
@@ -3456,7 +3571,7 @@ void displaygraph(const giac::gen & ge){
       }
       for (;;){
 	eqwdata vv=Equation_total_size(*it);
-	if (need_parenthesis(vv.g))
+	if (eqw_need_par(vv.g))
 	  x+=llp;
 	if (u==at_plus && it!=v.begin() &&
 	    ( 
@@ -3470,7 +3585,7 @@ void displaygraph(const giac::gen & ge){
 	if (x>windowhsize-vv.dx && x>windowhsize/2 && (itend-it)*vv.dx>windowhsize/2){
 	  largeur=max(x,largeur);
 	  x=0;
-	  if (need_parenthesis(vv.g))
+	  if (eqw_need_par(vv.g))
 	    x+=llp;
 	  h+=currenth;
 	  Equation_translate(*it,x,0);
@@ -3492,7 +3607,7 @@ void displaygraph(const giac::gen & ge){
 	    Equation_vertical_adjust(vv.dy,vv.y,currenth,y);
 	  }
 	x+=vv.dx;
-	if (need_parenthesis(vv.g))
+	if (eqw_need_par(vv.g))
 	  x+=lrp;
 	++it;
 	if (it==itend){
@@ -3503,7 +3618,7 @@ void displaygraph(const giac::gen & ge){
 	  //cout << v << endl;
 	  return gen(v,_SEQ__VECT);
 	}
-	x += ls+3;
+	x += (u==at_prod && eqw_implicit_prod(*it))?2:ls+3; // no operator drawn for implicit products
       } 
     }
     // normal printing
@@ -3710,7 +3825,7 @@ void displaygraph(const giac::gen & ge){
     if (s.size()>2000)
       s=s.substr(0,2000)+"...";
     // cerr << s.size() << endl;
-    text_print(fontsize,s.c_str(),eq->x()+e.x-x,eq->y()+y-e.y,text_color,background,e.selected?4:0);
+    text_print(fontsize,s.c_str(),eq->x()+e.x-x,eq->y()+y-e.y,text_color,background,(e.selected && !eqw_hide_sel)?4:0);
     return;
   }
 
@@ -3743,7 +3858,7 @@ void displaygraph(const giac::gen & ge){
      *******************/
     // v is the vector, w the master operator eqwdata
     gen oper=w.g; 
-    bool selected=w.selected ;
+    bool selected=w.selected && !eqw_hide_sel;
     int fontsize=w.eqw_attributs.fontsize;
     int background=w.eqw_attributs.background;
     int text_color=w.eqw_attributs.text_color;
@@ -4016,7 +4131,7 @@ void displaygraph(const giac::gen & ge){
       if (u==at_plus && tmp.g!=at_equal)
 	parenthesis=false;
       else {
-	if (parenthesis && need_parenthesis(tmp.g)){
+	if (parenthesis && eqw_need_par(tmp.g)){
 	  if (w.x<rightx){
 	    int pfontsize=max(fontsize,(fontsize+(tmp.baseline-tmp.y))/2);
 	    text_print(pfontsize,"(",eqx+w.x-x,eqy+y-tmp.baseline,text_color,background,mode);
@@ -4026,7 +4141,7 @@ void displaygraph(const giac::gen & ge){
       for (;;){
 	// write close parenthesis at end
 	int xx=tmp.dx+tmp.x-x;
-	if (parenthesis && need_parenthesis(tmp.g)){
+	if (parenthesis && eqw_need_par(tmp.g)){
 	  if (xx<rightx){
 	    int pfontsize=min(max(fontsize,(fontsize+(tmp.baseline-tmp.y))/2),fontsize*2);
 	    int deltapary=(2*(pfontsize-fontsize))/3;
@@ -4043,8 +4158,8 @@ void displaygraph(const giac::gen & ge){
 	}
 	// write operator
 	if (u==at_prod){
-	  // text_print(fontsize,".",eqx+xx+3,eqy+y-tmp.baseline-fontsize/3);
-	  text_print(fontsize,opstring.c_str(),eqx+xx+1,eqy+y-tmp.baseline,text_color,background,mode);
+	  if (!eqw_implicit_prod(*it)) // raised dot instead of '*' (same gap as in the layout)
+	    text_print(fontsize,".",eqx+xx+3,eqy+y-tmp.baseline-fontsize/3,text_color,background,mode);
 	}
 	else {
 	  gen tmpgen;
@@ -4063,7 +4178,7 @@ void displaygraph(const giac::gen & ge){
 	}
 	// write right parent, update tmp
 	tmp=Equation_total_size(*it);
-	if (parenthesis && (need_parenthesis(tmp.g)) ){
+	if (parenthesis && (eqw_need_par(tmp.g)) ){
 	  if (tmp.x-lpsize<rightx){
 	    int pfontsize=min(max(fontsize,(fontsize+(tmp.baseline-tmp.y))/2),fontsize*2);
 	    int deltapary=(2*(pfontsize-fontsize))/3;
