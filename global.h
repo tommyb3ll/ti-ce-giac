@@ -291,8 +291,9 @@ Boolean isLegalUTF8Sequence(const UTF8 *source, const UTF8 *sourceEnd);
 #if defined (NSPIRE) || defined(FXCG) || defined TICE
   void control_c();
 #ifdef TICE
-  // optional extra interrupt source polled by control_c(), set by the app
-  // (KhiCAS: time budget of the automatic simplification of results)
+  // optional extra interrupt source polled by control_c(), set by the app. KhiCAS no longer
+  // sets it (interrupting giac reset the calculator), but removing it makes LTO inline
+  // control_c() everywhere: +1.9 KB, over the 43-page limit.
   extern bool (*control_c_hook)();
 #endif
 #elif defined FIR

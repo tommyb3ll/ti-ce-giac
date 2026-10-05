@@ -1851,30 +1851,23 @@ void displaygraph(const giac::gen & ge){
     return true;
   }
 
-  // Time budget: clock() never advances in the app, the RTC is used (seconds of the day).
-  static int timed_start,timed_budget;
-  static int rtc_seconds_of_day(){
-    return rtc_Seconds+60*(rtc_Minutes+60*int(rtc_Hours)); // < 86400, fits a 24-bit int
-  }
-  static bool timed_expired(){
-    static unsigned char n;
-    if (++n & 15) // control_c() polls the hook very often (~500/s): read the RTC every 16 calls
+  // A radical or fractional power anywhere in g (sqrt(2), x^(3/2)). simplify() on such results is
+  // slow, rationalizes and, interrupted by a time budget, reset the calculator (cos(pi/12)):
+  // KhiCAS never interrupts giac on its own.
+  bool has_radical(const giac::gen & g){
+    if (g.type==_VECT){
+      for (const_iterateur it=g._VECTptr->begin();it!=g._VECTptr->end();++it){
+        if (has_radical(*it))
+          return true;
+      }
       return false;
-    int elapsed=rtc_seconds_of_day()-timed_start;
-    if (elapsed<0)
-      elapsed+=86400; // midnight
-    return elapsed>=timed_budget;
-  }
-  giac::gen timed_apply(const giac::unary_function_ptr * op,const giac::gen & args,int seconds,bool & timeout,const giac::context * contextptr){
-    timed_budget=seconds;
-    timed_start=rtc_seconds_of_day();
-    bool (*saved)()=giac::control_c_hook;
-    giac::control_c_hook=timed_expired;
-    giac::gen res=(*op)(args,contextptr);
-    giac::control_c_hook=saved;
-    timeout=giac::interrupted;
-    giac::ctrl_c=giac::kbd_interrupted=giac::interrupted=false;
-    return timeout?args:res;
+    }
+    if (g.type!=_SYMB)
+      return false;
+    const gen & f=g._SYMBptr->feuille;
+    if (g._SYMBptr->sommet==at_sqrt || (g._SYMBptr->sommet==at_pow && f.type==_VECT && f._VECTptr->size()==2 && f._VECTptr->back().type==_FRAC))
+      return true;
+    return has_radical(f);
   }
 
   // Result viewer: the whole result is selected (copy, edit and menus act on all of it) but
@@ -2226,8 +2219,8 @@ void displaygraph(const giac::gen & ge){
       }
       if (key==KEY_CTRL_F4 && !alph && keyflag!=1 && !listormat){
         // F4: cycle the whole result through equivalent forms. Each form is computed from the
-        // original result, so the decimal form can't make the next ones inexact; each
-        // computation gets a 3 s budget, a form that times out or equals the current one is skipped.
+        // original result, so the decimal form can't make the next ones inexact; a form equal to
+        // the current one is skipped, and so is simplify on radicals (see has_radical).
         static const giac::unary_function_ptr * const forms[]={at_simplify,at_ratnormal,at_factor,at_expand,at_evalf};
         static const char * const formnames[]={"original","simplified","one fraction","factored","expanded","decimal"};
         static const char * const formnames_fr[]={"originale","simplifiee","une fraction","factorisee","developpee","decimale"};
@@ -2244,9 +2237,10 @@ void displaygraph(const giac::gen & ge){
             continue;
           }
           statuslinemsg(lang?"calcul...":"computing...",COLOR_RED);
-          bool timeout;
-          res=timed_apply(forms[form_idx-1],form_orig,3,timeout,contextptr);
-          if (timeout || is_undef(res) || res.type==_STRNG)
+          if (forms[form_idx-1]==at_simplify && has_radical(form_orig))
+            continue;
+          res=(*forms[form_idx-1])(form_orig,contextptr);
+          if (is_undef(res) || res.type==_STRNG)
             res=geq;
         }
         if (!(res==geq)){ // new layout for the new form, placed like the initial one
@@ -3147,7 +3141,8 @@ void displaygraph(const giac::gen & ge){
     return true;
   }
   // product -> numerator/denominator: b^-k and inv(b) go down, a rational coefficient is split
-  // (x/8, not 1/8 x), numbers come first in the denominator. False if nothing goes down.
+  // (x/8, not 1/8 x), numbers come first in the denominator and numeric factors are merged
+  // (20x, not 10*2x). False if nothing changes.
   static bool eqw_prod_frac(const gen & arg,gen & n,gen & d){
     if (arg.type!=_VECT)
       return false;
@@ -3155,6 +3150,7 @@ void displaygraph(const giac::gen & ge){
     vecteur num,den;
     gen dcoef(1),ncoef(1),b;
     bool down=false;
+    int nnum=0; // numeric factors: 10*2*x is drawn 20x
     for (size_t i=0;i<v.size();++i){
       const gen & f=v[i];
       if (eqw_den_factor(f,b)){
@@ -3169,12 +3165,14 @@ void displaygraph(const giac::gen & ge){
         ncoef=ncoef*f._FRACptr->num;
         dcoef=dcoef*f._FRACptr->den;
       }
-      else if (f.type==_INT_ || f.type==_ZINT)
+      else if (f.type==_INT_ || f.type==_ZINT){
         ncoef=ncoef*f;
+        ++nnum;
+      }
       else
         num.push_back(f);
     }
-    if (!down)
+    if (!down && nnum<2)
       return false;
     if (!is_one(ncoef))
       num.insert(num.begin(),ncoef);

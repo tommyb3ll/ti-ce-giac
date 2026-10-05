@@ -22,7 +22,7 @@ namespace xcas {
   giac::gen eqw(const giac::gen & ge,bool editable);
   // Apply op to args, interrupting the computation after `seconds` (RTC, 1 s resolution,
   // so the real budget is seconds-1..seconds). On timeout returns args and sets timeout.
-  giac::gen timed_apply(const giac::unary_function_ptr * op,const giac::gen & args,int seconds,bool & timeout,const giac::context * contextptr);
+  bool has_radical(const giac::gen & g);
   // maximum "size" of symbolics displayed in an Equation (pretty print)
   extern unsigned max_prettyprint_equation;
   // matrix select
