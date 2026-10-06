@@ -2905,6 +2905,11 @@ extern "C" void Sleep(unsigned int miliSecond);
   // else: -> else [nothing in stack]
   // elif ...: -> elif ... then [nothing in stack]
   // try: ... except: ...
+#ifdef FLOWCE // FlowCE has no Python syntax: input is never translated (python2xcas was 24 KB)
+  std::string python2xcas(const std::string & s_orig,GIAC_CONTEXT){
+    return s_orig;
+  }
+#else
   std::string python2xcas(const std::string & s_orig,GIAC_CONTEXT){
     if (xcas_mode(contextptr)>0 && abs_calc_mode(contextptr)!=38)
       return s_orig;
@@ -3576,6 +3581,7 @@ extern "C" void Sleep(unsigned int miliSecond);
     res.clear(); cur.clear();
     return string(s.begin(),s.end());
   }
+#endif // FLOWCE
   
   /* END PYTHON */
 
