@@ -1793,8 +1793,9 @@ void displaygraph(const giac::gen & ge){
 #endif
       if ( do_logo_graph_eqw % 2 ==0)
         return;
-      if (taille(ge,xcas::max_prettyprint_equation)>=xcas::max_prettyprint_equation || ge.is_symb_of_sommet(at_program))
-        return ; // sizeof(eqwdata)=44
+      if (focus_on || taille(ge,xcas::max_prettyprint_equation)>=xcas::max_prettyprint_equation || ge.is_symb_of_sommet(at_program))
+        return ; // sizeof(eqwdata)=44 (Focus draws results itself: no viewer)
+#if !focus_on // the old equation viewer: not built with Focus (it draws results itself)
       gen tmp=eqw(ge,false);
       if (!is_undef(tmp) && tmp!=ge){
         //dConsolePutChar(147);
@@ -1802,9 +1803,11 @@ void displaygraph(const giac::gen & ge){
         Console_NewLine(LINE_TYPE_INPUT, 1);
         ge=tmp;
       }
+#endif
     }
   }
 
+#if !focus_on // the old equation editor (eqws, eqw, Equation_*): Focus edits and draws in 2D itself
   bool eqws(char * s,bool eval){
     // s buffer must be at least GEN_PRINT_BUFSIZE char
     gen g,ge;
@@ -1857,6 +1860,7 @@ void displaygraph(const giac::gen & ge){
     return true;
   }
 
+#endif // !focus_on
   // A radical or fractional power anywhere in g (sqrt(2), x^(3/2)). simplify() on such results is
   // slow, rationalizes and, interrupted by a time budget, reset the calculator (cos(pi/12)):
   // KhiCAS never interrupts giac on its own.
@@ -2011,6 +2015,7 @@ void displaygraph(const giac::gen & ge){
   }
 
   // Result viewer: the whole result is selected (copy, edit and menus act on all of it) but
+#if !focus_on // the old equation editor and its drawing (Equation_*), to the end of WITH_EQW
   // drawn without highlight until the first arrow key, like a plain NumWorks/Symbolab result.
   static bool eqw_hide_sel=false;
   // vertical scroll that centers a result that fits between the status line and the menu bar
@@ -3020,6 +3025,7 @@ void displaygraph(const giac::gen & ge){
   // void PrintCXY(int x, int y, const char *cptr, int mode_flags, int P5, int color, int back_color, int P8, int P9)
   // void PrintMini( int* x, int* y, const char* string, int mode_flags, unsigned int xlimit, int P6, int P7, int color, int back_color, int writeflag, int P11)
 
+#endif // !focus_on (the text and arc helpers below draw the graph view too)
   void text_print(int fontsize,const char * s,int x,int y,int c=COLOR_BLACK,int bg=COLOR_WHITE,int mode=0){
     // *logptr(contextptr) << x << " " << y << " " << fontsize << " " << s << endl; return;
     c=(unsigned short) c;
@@ -3153,6 +3159,7 @@ void displaygraph(const giac::gen & ge){
     v.back()=v.front();
     draw_filled_polygon(v,0,LCD_WIDTH_PX,24,LCD_HEIGHT_PX,c);
   }
+#if !focus_on // (the old equation editor, continued)
 
   bool binary_op(const unary_function_ptr & u){
     const unary_function_ptr binary_op_tab_ptr []={*at_plus,*at_prod,*at_pow,*at_and,*at_ou,*at_xor,*at_different,*at_same,*at_equal,*at_unit,*at_compose,*at_composepow,*at_deuxpoints,*at_tilocal,*at_pointprod,*at_pointdivision,*at_pointpow,*at_division,*at_normalmod,*at_minus,*at_intersect,*at_union,*at_interval,*at_inferieur_egal,*at_inferieur_strict,*at_superieur_egal,*at_superieur_strict,*at_equal2,0};
@@ -4467,6 +4474,7 @@ void displaygraph(const giac::gen & ge){
     Equation_draw(eq.data,x,y,RAND_MAX,0,&eq);
     clip_ymin=save_ymin_clip;
   }
+#endif // !focus_on
 
 #endif // WITH_EQW
 
