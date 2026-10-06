@@ -1687,7 +1687,7 @@ void displaygraph(const giac::gen & ge){
         lang==1?"En bas":"Down",
         0};
       const int s=sizeof(tab)/sizeof(char *);
-      int choix=select_item(tab,lang==1?"Trace":"Trace",true);
+      int choix=select_item(tab,lang==1?"Deplacer":"Move view",true);
       if (choix<0 || choix>s)
         continue;
       if (choix==0){
@@ -4689,17 +4689,19 @@ void displaygraph(const giac::gen & ge){
   }
   
   void Graph2d::table(const gen & t,const gen & x,const gen & y,double tmin,double tstep){
-    statuslinemsg("up/down/+/-/left/right");
+    statuslinemsg(focus_on?"TABLE":"up/down/+/-/left/right");
     double t0=tmin,ts,tc=t0;
     ts=find_tick(tstep);
     t0=int(t0/ts)*ts;
     int ndisp=10,N=6,dy=5;
     for (;;){
       // table of values
-      drawRectangle(0,STATUS_AREA_PX,LCD_WIDTH_PX,LCD_HEIGHT_PX-STATUS_AREA_PX,COLOR_WHITE);
+      if (!focus_on)
+        drawRectangle(0,STATUS_AREA_PX,LCD_WIDTH_PX,LCD_HEIGHT_PX-STATUS_AREA_PX,COLOR_WHITE);
       //statuslinemsg("esc: quit, up/down: move");
       // table of values
-      if (t==x){
+      if (focus_on) ;
+      else if (t==x){
         os_draw_string(0,dy,COLOR_BLACK,COLOR_WHITE,"x");
         os_draw_string(120,dy,COLOR_BLACK,COLOR_WHITE,y.print().c_str());
       }
@@ -4709,6 +4711,28 @@ void displaygraph(const giac::gen & ge){
         os_draw_string(214,dy,COLOR_BLACK,COLOR_WHITE,"y");
       }
       vecteur V;
+#if focus_on
+      { // the Focus look: the same values, drawn by focus_table
+        const int nc=t==x?2:3;
+        std::string ys=y.print(contextptr),xs=x.print(contextptr),cell[3*10];
+        const char * head[3]={t==x?"x":"t",t==x?ys.c_str():xs.c_str(),ys.c_str()},* cp[3*10];
+        for (int i=0;i<ndisp;++i){
+          const double tcur=tc+i*ts;
+          vecteur L(1,tcur);
+          cell[i*nc]=printn(tcur,N);
+          for (int c=1;c<nc;++c){
+            gen cur=subst(c==1 && t!=x?x:y,t,tcur,false,contextptr);
+            L.push_back(cur);
+            cell[i*nc+c]=printn(cur,N);
+          }
+          V.push_back(L);
+        }
+        for (int i=0;i<nc*ndisp;++i)
+          cp[i]=cell[i].c_str();
+        focus_table(head,nc,cp,ndisp,"up down: scroll    + -: step    left: start    right: step    EXIT");
+      }
+      if (0)
+#endif
       for (int i=1;i<=ndisp;++i){
         double tcur=tc+(i-1)*ts;
         vecteur L(1,tcur);
