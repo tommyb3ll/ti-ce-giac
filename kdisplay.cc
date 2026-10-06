@@ -1921,6 +1921,8 @@ void displaygraph(const giac::gen & ge){
     vecteur ids(lidnt(u));
     if (ids.size()!=1 || !is_constant_wrt(_denom(u,contextptr),ids.front(),contextptr))
       return g;
+    if (lvar(u).size()!=1) // sin(x), exp(x)... in the radicand: quorem below needs a rational
+      return g;            // function of x (exam day: sqrt(1+sin(x)^4*cos(x)^6) never returned)
     const gen x=ids.front();
     // g = q*u^(e2/2), q rational: r is a factor of g (r*...) or of its denominator (.../r)
     int e2=er;
