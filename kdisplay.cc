@@ -22,6 +22,10 @@
 #include "textGUI.h"
 #include "main.h"
 #include "file.h"
+#include "ui_gfx.h"     // the graph view's Focus look
+#include "ui_font.h"
+#include "ui_fontdata.h"
+#include "focus.h"
 #include <sys/lcd.h>
 #include <sys/rtc.h>
 
@@ -1384,6 +1388,7 @@ void displaygraph(const giac::gen & ge){
   //if (aborttimer > 0) { Timer_Stop(aborttimer); Timer_Deinstall(aborttimer);}
   xcas::Graph2d gr(ge);
   gr.show_axes=true;
+  focus_view=1; // menus over the graph: it redraws itself after them
   // initial setting for x and y
   if (ge.type==_VECT){
     const_iterateur it=ge._VECTptr->begin(),itend=ge._VECTptr->end();
@@ -1761,6 +1766,7 @@ void displaygraph(const giac::gen & ge){
     if (key==KEY_CHAR_DIV) { gr.orthonormalize(); }
     if (key==KEY_CTRL_VARS || key==KEY_CTRL_OPTN) {gr.show_axes=!gr.show_axes;}
   }
+  focus_view=0; // the console's screen again
 }  
 #endif  
 
@@ -5199,8 +5205,40 @@ void displaygraph(const giac::gen & ge){
   }
 
   unsigned short motif[8]={0xfff0,0xffff,0xff00,0xf0f0,0xe38e,0xcccc,0xaaaa,0xfc0a};
+  // a curve's color in the Focus theme: giac's default (black: FL_BLACK = 1 in plot.h, _BLACK = 0)
+  // is the accent blue; the small FL_* codes and giac's 565 colors map to theme colors; -1: classic
+  static int graph_theme_color(int c){
+    switch (c & 0xffff){
+    case 0: case 1: case 4: case COLOR_BLUE: return UC_ACC;
+    case 2: case COLOR_GREEN: return UC_GREEN;
+    case 3: case COLOR_YELLOW: return UC_ORANGE;
+    case 5: case COLOR_MAGENTA: return UC_PURPLE;
+    case COLOR_RED: return UC_RED;
+    }
+    return -1;
+  }
   inline void fl_line(int x0,int y0,int x1,int y1,int c){
-    draw_line(x0,y0,x1,y1,c);//,motif[c%8]);
+    const int t=graph_theme_color(c);
+    if (t<0 || x0<-4096 || x0>4096 || x1<-4096 || x1>4096 || y0<-4096 || y0>4096 || y1<-4096 || y1>4096){ // a classic color, or far off screen
+      draw_line(x0,y0,x1,y1,c);//,motif[c%8]);
+      return;
+    }
+    ui_clip(0,STATUS_AREA_PX,LCD_WIDTH_PX,LCD_HEIGHT_PX); // anti-aliased, 1.6 px
+    ui_seg16(x0*16+8,y0*16+8,x1*16+8,y1*16+8,26,ui_ramp(0,t,UC_BG));
+    ui_noclip();
+  }
+
+  // a curve's segment from its unrounded pixel coordinates (I0..J1: the same rounded):
+  // anti-aliased at 1/16 px in a theme color, else as fl_line
+  static void fl_line_d(double x0,double y0,double x1,double y1,int I0,int J0,int I1,int J1,int c){
+    const int t=graph_theme_color(c);
+    if (t<0 || !(x0>-4096 && x0<4096 && x1>-4096 && x1<4096 && y0>-4096 && y0<4096 && y1>-4096 && y1<4096)){
+      fl_line(I0,J0,I1,J1,c);
+      return;
+    }
+    ui_clip(0,STATUS_AREA_PX,LCD_WIDTH_PX,LCD_HEIGHT_PX);
+    ui_seg16(int(x0*16+4104)-4096,int(y0*16+4104)-4096,int(x1*16+4104)-4096,int(y1*16+4104)-4096,26,ui_ramp(0,t,UC_BG));
+    ui_noclip();
   }
 
   inline void fl_polygon(int x0,int y0,int x1,int y1,int x2,int y2,int c){
@@ -5558,6 +5596,7 @@ void displaygraph(const giac::gen & ge){
       }
       bool seghalfline=( point.subtype==_LINE__VECT || point.subtype==_HALFLINE__VECT ) && (point._VECTptr->size()==2);
       int I0=i0+.5+deltax,J0=j0+.5+deltay,I1,J1;
+      double X0=i0+deltax,Y0=j0+deltay; // the same, unrounded: curves are drawn at 1/16 px
       // rest of the path
       for (;;){
 	if (!Mon_image.findij(*jt,x_scale,y_scale,i1,j1,contextptr))
@@ -5565,8 +5604,9 @@ void displaygraph(const giac::gen & ge){
 	if (!seghalfline){
           if (!logx && !logy && point.subtype!=_VECTOR__VECT){
             I1=i1+.5+deltax,J1=j1+.5+deltay;
-            fl_line(I0,J0,I1,J1,couleur);
-            I0=I1; J0=J1; 
+            const double X1=i1+deltax,Y1=j1+deltay;
+            fl_line_d(X0,Y0,X1,Y1,I0,J0,I1,J1,couleur);
+            I0=I1; J0=J1; X0=X1; Y0=Y1;
           }
           else {
             checklog_fl_line(i0,j0,i1,j1,deltax,deltay,logx,logy,Mon_image.window_xmin,x_scale,Mon_image.window_ymax,y_scale,couleur);
@@ -5658,14 +5698,38 @@ void displaygraph(const giac::gen & ge){
     statuslinemsg(tracemode_add.c_str(),COLOR_CYAN);//os_draw_string_small(1,-16,COLOR_CYAN,COLOR_BLACK,tracemode_add.c_str());
     if (!tracemode_disp.empty())
       fltk_draw(*this,tracemode_disp,x_scale,y_scale,0,0,LCD_WIDTH_PX,LCD_HEIGHT_PX);
-    int taille=5;
-    int j=current_j+STATUS_AREA_PX;
-    fl_line(current_i-taille,j,current_i+taille,j,COLOR_BLACK);
-    fl_line(current_i,j-taille,current_i,j+taille,COLOR_BLACK);
+    const int j=current_j+STATUS_AREA_PX; // a ring on the curve (within the 11 x 11 saved around it)
+    ui_clip(0,STATUS_AREA_PX,LCD_WIDTH_PX,LCD_HEIGHT_PX);
+    ui_rrect(0,current_i-4,j-4,9,9,4,UC_ACC,UC_BG);
+    ui_rrect(0,current_i-2,j-2,5,5,2,UC_WHITE,UC_ACC);
+    ui_noclip();
   }
 
   // return a vector of values with simple decimal representation
   // between xmin/xmax or including xmin/xmax (if bounds is true)
+  // a tick's label: at most 3 decimals, no trailing zeros (2, -0.5, 0.25); giac's printing for
+  // very large or very small values
+  static void graph_tick_label(char * s,double d){
+    const double a=d<0?-d:d;
+    if (a<1e-9){ strcpy(s,"0"); return; }
+    if (a>=1e6 || a<1e-3){ sprint_double(s,d); return; }
+    long m=long(a*1000+.5),ip=m/1000,fp=m%1000;
+    char b[12],* p=s;
+    int k=0;
+    do { b[k++]=char('0'+ip%10); ip/=10; } while (ip);
+    if (d<0) *p++='-';
+    while (k) *p++=b[--k];
+    if (fp){
+      *p++='.';
+      *p++=char('0'+fp/100);
+      if (fp%100){
+        *p++=char('0'+fp/10%10);
+        if (fp%10) *p++=char('0'+fp%10);
+      }
+    }
+    *p=0;
+  }
+
   vecteur ticks(double xmin,double xmax,bool bounds){
     if (xmax<xmin)
       swapdouble(xmin,xmax);
@@ -5697,89 +5761,56 @@ void displaygraph(const giac::gen & ge){
     int save_clip_ymin=clip_ymin;
     clip_ymin=STATUS_AREA_PX;
     int horizontal_pixels=LCD_WIDTH_PX,vertical_pixels=LCD_HEIGHT_PX-STATUS_AREA_PX,deltax=0,deltay=STATUS_AREA_PX,clip_x=0,clip_y=0,clip_w=horizontal_pixels,clip_h=vertical_pixels;
-    drawRectangle(0,STATUS_AREA_PX,LCD_WIDTH_PX,LCD_HEIGHT_PX-STATUS_AREA_PX,COLOR_WHITE);//Bdisp_AllClr_VRAM();
-    // Draw axis
+    // the Focus look (ui_gfx.h): a light background, a faint grid at the ticks, gray axes, small
+    // labels along the axes (or along the edges when an axis is off screen)
+    const int y0=STATUS_AREA_PX,bg=ui_col(0,UC_BG);
+    ui_noclip();
+    ui_fill(0,y0-2,LCD_WIDTH_PX,LCD_HEIGHT_PX-y0+2,bg); // from the bottom of the Focus status bar
     double I0,J0;
     findij(zero,x_scale,y_scale,I0,J0,contextptr); // origin
     int i_0=round(I0),j_0=round(J0);
-    vecteur affx,affy; int affxs,affys;
-    if (show_axes){ 
-      int taille,delta;
-      char ch[256];
-      // X
-      affx=ticks(window_xmin,window_xmax,true);
-      affxs=affx.size();
+    if (show_axes){
+      vecteur affx=ticks(window_xmin,window_xmax,true),affy=ticks(window_ymin,window_ymax,true);
+      const int affxs=affx.size(),affys=affy.size(),grid=ui_col(0,UC_LINE),axis=ui_col(0,UC_SUB);
+      const bool xa=window_ymax>=0 && window_ymin<=0,ya=window_xmax>=0 && window_xmin<=0;
       for (int i=0;i<affxs;++i){
-	double d=evalf_double(affx[i],1,contextptr)._DOUBLE_val;
-	if (fabs(d)<1e-6) strcpy(ch,"0"); else sprintfdouble(ch,"",d);
-	delta=int((d-window_xmin)*x_scale);//int(horizontal_pixels*(d-window_xmin)/(window_xmax-window_xmin));
-	taille=strlen(ch)*4;
-        os_set_pixel(delta,vertical_pixels+STATUS_AREA_PX-1,COLOR_GREEN);
-        os_set_pixel(delta,vertical_pixels+STATUS_AREA_PX-2,COLOR_GREEN);
-	//fl_line(delta,vertical_pixels+STATUS_AREA_PX-2,delta,vertical_pixels+STATUS_AREA_PX-1,COLOR_GREEN);
-	if (delta>=taille/2 && delta<=horizontal_pixels){
-	  text_print(6,ch,delta-taille/2,vertical_pixels+STATUS_AREA_PX-2,COLOR_GREEN);
-	}
+        const int d=int((evalf_double(affx[i],1,contextptr)._DOUBLE_val-window_xmin)*x_scale);
+        if (d>=0 && d<LCD_WIDTH_PX) ui_fill(d,y0,1,vertical_pixels,grid);
       }
-      // Y
-      affy=ticks(window_ymin,window_ymax,true);
-      affys=affy.size();
-      taille=3;
       for (int j=0;j<affys;++j){
-	double d=evalf_double(affy[j],1,contextptr)._DOUBLE_val;
-	if (fabs(d)<1e-6) strcpy(ch,"0"); else sprintfdouble(ch,"",d);
-	delta=int((window_ymax-d)*y_scale);//int(vertical_pixels*(window_ymax-d)/(window_ymax-window_ymin));
-	if (delta>=taille && delta<=vertical_pixels-taille){
-          os_set_pixel(horizontal_pixels-1,STATUS_AREA_PX+delta,COLOR_RED);
-          os_set_pixel(horizontal_pixels-2,STATUS_AREA_PX+delta,COLOR_RED);
-	  // fl_line(horizontal_pixels-2,STATUS_AREA_PX+delta,horizontal_pixels-1,STATUS_AREA_PX+delta,COLOR_RED);
-	  text_print(6,ch,horizontal_pixels-strlen(ch)*5-2,STATUS_AREA_PX+delta+taille,COLOR_RED);
-	}
+        const int d=int((window_ymax-evalf_double(affy[j],1,contextptr)._DOUBLE_val)*y_scale);
+        if (d>=0 && d<vertical_pixels) ui_fill(0,y0+d,LCD_WIDTH_PX,1,grid);
       }
-    }
-    if (show_axes &&  (window_ymax>=0) && (window_ymin<=0)){ // X-axis
-      char ch[256];
-      int color=convertcolor(COLOR_GREEN);
-      for (int I=0;I<=horizontal_pixels;++I)
-       vGL_set_pixel(deltax+I,deltay+j_0,color);
-      color=convertcolor(COLOR_CYAN);
-      for (int I=i_0;I<=i_0+x_scale;++I)
-        vGL_set_pixel(deltax+I,deltay+j_0,color);
-      //check_fl_line(deltax,deltay+j_0,deltax+horizontal_pixels,deltay+j_0,clip_x,clip_y,clip_w,clip_h,0,0,COLOR_GREEN); 
-      //check_fl_line(deltax+i_0,deltay+j_0,deltax+i_0+int(x_scale),deltay+j_0,clip_x,clip_y,clip_w,clip_h,0,0,COLOR_CYAN);
+      if (xa) ui_fill(0,y0+j_0,LCD_WIDTH_PX,1,axis);
+      if (ya) ui_fill(i_0,y0,1,vertical_pixels,axis);
+      const unsigned char * ink=ui_ramp(0,UC_SUB,UC_BG);
+      char ch[24];
+      // x labels under the x axis (over it near the bottom edge)
+      int by=xa?y0+j_0+11:(window_ymin>0?LCD_HEIGHT_PX-3:y0+11);
+      if (xa && by>LCD_HEIGHT_PX-2) by=y0+j_0-3;
       for (int i=0;i<affxs;++i){
-	double d=evalf_double(affx[i],1,contextptr)._DOUBLE_val;
-	sprint_double(ch,d);
-	int delta=int((d-window_xmin)*x_scale);//int(horizontal_pixels*(d-window_xmin)/(window_xmax-window_xmin));
-	int taille=strlen(ch)*9;
-        for (int J=0;J<=2;++J)
-          os_set_pixel(delta,deltay+j_0-J,COLOR_BLACK);
-	// fl_line(delta,deltay+j_0,delta,deltay+j_0-2,COLOR_BLACK);
+        const double v=evalf_double(affx[i],1,contextptr)._DOUBLE_val;
+        const int d=int((v-window_xmin)*x_scale);
+        graph_tick_label(ch,v);
+        if (ch[0]=='0' && !ch[1] && ya) continue; // the origin: no label
+        const int w=ui_text_width(&ui_tr9,ch,-1),x=d-w/2;
+        if (x<1 || x+w>LCD_WIDTH_PX-1) continue;
+        ui_fill(x-1,by-9,w+2,12,bg);
+        ui_draw_text(&ui_tr9,ch,-1,x,by,ink,0);
       }
-      // check_fl_draw(labelsize,"x",deltax+horizontal_pixels-40,deltay+j_0-4,clip_x,clip_y,clip_w,clip_h,0,0,COLOR_GREEN);
-    }
-    if ( show_axes && (window_xmax>=0) && (window_xmin<=0) ) {// Y-axis
-      char ch[256];
-      int color=convertcolor(COLOR_RED);
-      for (int J=0;J<=vertical_pixels;++J)
-        vGL_set_pixel(deltax+i_0,deltay+J,color);
-      color=convertcolor(COLOR_CYAN);
-      for (int J=j_0-int(y_scale);J<=j_0;++J)
-        vGL_set_pixel(deltax+i_0,deltay+J,color);
-      // check_fl_line(deltax+i_0,deltay,deltax+i_0,deltay+vertical_pixels,clip_x,clip_y,clip_w,clip_h,0,0,COLOR_RED);
-      // check_fl_line(deltax+i_0,deltay+j_0,deltax+i_0,deltay+j_0-int(y_scale),clip_x,clip_y,clip_w,clip_h,0,0,COLOR_CYAN);
-      int taille=3;
+      // y labels left of the y axis (right of it near the left edge)
       for (int j=0;j<affys;++j){
-	double d=evalf_double(affy[j],1,contextptr)._DOUBLE_val;
-	sprint_double(ch,d);
-	int delta=int((window_ymax-d)*y_scale);//int(vertical_pixels*(window_ymax-d)/(window_ymax-window_ymin));
-	if (delta>=taille && delta<=vertical_pixels-taille){
-          for (int I=0;I<=2;++I)
-            os_set_pixel(deltax+i_0+I,STATUS_AREA_PX+delta,COLOR_BLACK);
-	  // fl_line(deltax+i_0,STATUS_AREA_PX+delta,deltax+i_0+2,STATUS_AREA_PX+delta,COLOR_BLACK);
-	}
+        const double v=evalf_double(affy[j],1,contextptr)._DOUBLE_val;
+        const int d=int((window_ymax-v)*y_scale);
+        graph_tick_label(ch,v);
+        if (ch[0]=='0' && !ch[1]) continue;
+        const int w=ui_text_width(&ui_tr9,ch,-1),yb=y0+d+4;
+        int x=ya?i_0-3-w:(window_xmin>0?2:LCD_WIDTH_PX-2-w);
+        if (ya && x<2) x=i_0+4;
+        if (yb-9<y0 || yb>LCD_HEIGHT_PX-1) continue;
+        ui_fill(x-1,yb-9,w+2,12,bg);
+        ui_draw_text(&ui_tr9,ch,-1,x,yb,ink,0);
       }
-      //check_fl_draw(labelsize,"y",deltax+i_0+2,deltay+labelsize,clip_x,clip_y,clip_w,clip_h,0,0,COLOR_RED);
     }
 #if 0 // if ticks are enabled, don't forget to set freeze to false
     // Ticks
