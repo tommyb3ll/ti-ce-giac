@@ -155,7 +155,8 @@ namespace giac {
     //++count;
     //if (kb_Data[1]) dbg_printf("control_c count=%i kbd=%i\n",count,kb_Data[1]);
     if ( //(count & 0x1f==0) &&
-         kb_Data[6]==64 || (control_c_hook && control_c_hook())){
+         kb_Data[6]==64 || (*(volatile unsigned char *)0xF00020 & 1) || (control_c_hook && control_c_hook())){
+      // CLEAR (kb_Data[6] 64) or ON (kb_On, outside the key matrix: TI's break key) stops
       // dbg_printf("control_c interrupt\n",count);
       // kb_ClearOnLatch();
       ctrl_c=true; interrupted=true;
