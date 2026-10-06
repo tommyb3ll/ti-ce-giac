@@ -387,7 +387,7 @@ namespace giac {
       return ;
     }
     float m=ldexp(d,1); i=m;
-    if (i==m && -1e6<m && m<1e6){
+    if (i==m && (i&1) && -1e6<m && m<1e6){ // (i even: d near an integer, on a host with 64-bit doubles)
       // d=i/2 with i odd; print the sign first, i/2 truncates toward 0 (-0.5 would print as 0.5)
       if (i<0){ *ch++='-'; i=-i; }
       sprintf(ch,"%i.5",i/2);
