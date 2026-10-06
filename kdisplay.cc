@@ -5247,6 +5247,10 @@ void displaygraph(const giac::gen & ge){
     case 5: case COLOR_MAGENTA: return UC_PURPLE;
     case COLOR_RED: return UC_RED;
     }
+    if (!(c & 0xfff)){ // plot([f,g,...]): the k-th curve has color k*4096 (kplot.cc)
+      static const unsigned char cyc[]={UC_RED,UC_GREEN,UC_ORANGE,UC_PURPLE};
+      return cyc[(((c & 0xffff)>>12)-1)&3];
+    }
     return -1;
   }
   inline void fl_line(int x0,int y0,int x1,int y1,int c){
