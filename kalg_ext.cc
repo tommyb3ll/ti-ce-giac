@@ -1680,9 +1680,12 @@ namespace giac {
 	    lv.push_back(lv0[i]);
 	}
 	if (!lv.empty()
-#ifdef TICE // sin, cos, tan: their range below at once (fminmax's resultants took 90 s on the
-	    // calculator for tan(x/2), the sign of tan(x/2)-3 in ln|tan(x/2)-3|, 1/(3-5sin(x))'s integral)
-	    && !g.is_symb_of_sommet(at_sin) && !g.is_symb_of_sommet(at_cos) && !g.is_symb_of_sommet(at_tan)
+#ifdef TICE // sin, cos, tan of a variable without assumptions: their range below at once
+	    // (fminmax's resultants took 90 s on the calculator for tan(x/2), the sign of tan(x/2)-3 in
+	    // ln|tan(x/2)-3|, 1/(3-5sin(x))'s integral, to find the reals). With an assumed interval
+	    // (a definite integral's bounds) fminmax may find a sign: sin(t/2)>=0 on [0,pi]
+	    && !((g.is_symb_of_sommet(at_sin) || g.is_symb_of_sommet(at_cos) || g.is_symb_of_sommet(at_tan))
+		 && lv[0].type==_IDNT && lv[0]._IDNTptr->eval(1,lv[0],contextptr).type==_IDNT)
 #endif
 	    ){
 	  gen res=fminmax(makevecteur(g,lv[0]),0,contextptr);
