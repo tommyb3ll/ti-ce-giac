@@ -1652,6 +1652,24 @@ namespace giac {
     }
   }
   bool is_constant_idnt(const gen & g); // FIXME -> prog.h
+#ifdef TICE
+  // sin or cos of a*x+b with x assumed in one interval of length >= 2pi/|a| (a definite integral
+  // over a period or more): their range is all of [-1,1], below at once (with fminmax, |sin(x)|
+  // from 0 to 2pi took 24 s on the calculator, 6 s without)
+  static bool trig_full_period(const gen & g,const vecteur & lv,GIAC_CONTEXT){
+    if (!(g.is_symb_of_sommet(at_sin) || g.is_symb_of_sommet(at_cos)) || lv.size()!=1 || lv[0].type!=_IDNT)
+      return false;
+    const gen v=lv[0]._IDNTptr->eval(1,lv[0],contextptr);
+    if (v.type!=_VECT || v.subtype!=_ASSUME__VECT || v._VECTptr->size()!=3 || (*v._VECTptr)[1].type!=_VECT || (*v._VECTptr)[1]._VECTptr->size()!=1)
+      return false;
+    const gen & I=(*v._VECTptr)[1]._VECTptr->front();
+    gen a,b;
+    if (I.type!=_VECT || I._VECTptr->size()!=2 || !is_linear_wrt(g._SYMBptr->feuille,lv[0],a,b,contextptr))
+      return false;
+    const gen L=evalf_double(abs(a,contextptr)*(I._VECTptr->back()-I._VECTptr->front()),1,contextptr);
+    return L.type==_DOUBLE_ && L._DOUBLE_val>=2*M_PI*(1-1e-6);
+  }
+#endif
   // find extremals values of g
   // should be improved (currently return -1..1 for sin and cos
   int find_range(const gen & g,vecteur & a,GIAC_CONTEXT){
@@ -1686,6 +1704,7 @@ namespace giac {
 	    // (a definite integral's bounds) fminmax may find a sign: sin(t/2)>=0 on [0,pi]
 	    && !((g.is_symb_of_sommet(at_sin) || g.is_symb_of_sommet(at_cos) || g.is_symb_of_sommet(at_tan))
 		 && lv[0].type==_IDNT && lv[0]._IDNTptr->eval(1,lv[0],contextptr).type==_IDNT)
+	    && !trig_full_period(g,lv,contextptr)
 #endif
 	    ){
 	  gen res=fminmax(makevecteur(g,lv[0]),0,contextptr);

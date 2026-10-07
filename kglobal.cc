@@ -2395,7 +2395,7 @@ extern "C" void Sleep(unsigned int miliSecond);
 #endif
     }
     std::string s=autosimplify(contextptr);
-    if (s.size()<1 || s=="'nop'")
+    if (s.size()<1 || s=="'nop'" || s=="Nop" || s=="nop") // autosimplify(0) sets Nop (no function: Nop(g) was shown)
       return g;
     gen a(s,contextptr);
     if (a.type==_FUNC)
