@@ -1679,7 +1679,12 @@ namespace giac {
 	  if (evalf_double(lv0[i],1,contextptr).type!=_DOUBLE_) // if (!is_constant_idnt(lv0[i]))
 	    lv.push_back(lv0[i]);
 	}
-	if (!lv.empty()){
+	if (!lv.empty()
+#ifdef TICE // sin, cos, tan: their range below at once (fminmax's resultants took 90 s on the
+	    // calculator for tan(x/2), the sign of tan(x/2)-3 in ln|tan(x/2)-3|, 1/(3-5sin(x))'s integral)
+	    && !g.is_symb_of_sommet(at_sin) && !g.is_symb_of_sommet(at_cos) && !g.is_symb_of_sommet(at_tan)
+#endif
+	    ){
 	  gen res=fminmax(makevecteur(g,lv[0]),0,contextptr);
 	  if (is_undef(res))
 	    return 0;

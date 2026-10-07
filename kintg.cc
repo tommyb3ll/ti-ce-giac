@@ -2454,7 +2454,19 @@ namespace giac {
     vecteur v(1,gen_x);
     rlvarx(e,gen_x,v);
     int rvarsize=int(v.size());
-    if (rvarsize>1){
+    bool tx=rvarsize>1;
+#ifdef TICE
+    // not for a function of an argument not linear in x (exp(12x-5x^2), tan(12x-5x^2)): texpand
+    // splits it into more variables, so its result goes unused, and it took over 90 s on the
+    // calculator for (6-5x)e^(12x-5x^2)+(20x-24)sec(12x-5x^2)^2
+    for (int i=1;tx && i<rvarsize;++i){
+      gen ta,tb;
+      if ((v[i].is_symb_of_sommet(at_exp) || v[i].is_symb_of_sommet(at_sin) || v[i].is_symb_of_sommet(at_cos) || v[i].is_symb_of_sommet(at_tan))
+	  && !is_linear_wrt(v[i]._SYMBptr->feuille,gen_x,ta,tb,contextptr))
+	tx=false;
+    }
+#endif
+    if (tx){
       gen e2=_texpand(e,contextptr);
       if (is_undef(e2))
 	e2=e;
