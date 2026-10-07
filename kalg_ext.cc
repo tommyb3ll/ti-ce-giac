@@ -868,7 +868,7 @@ namespace giac {
       // Change for multivariate polynomials p, added evaluation
       if (innerdim){
 	gen params;
-	*logptr(contextptr) << gettext("Warning, need to choose a branch for the root of a polynomial with parameters. This might be wrong.") << endl;
+	LOGMSG << gettext("Warning, need to choose a branch for the root of a polynomial with parameters. This might be wrong.") << endl;
 	if (l && l->size()>=2){
 	  for (int i=1;i<l->size();++i){
 	    params=(*l)[i];
@@ -917,9 +917,9 @@ namespace giac {
 	polynome pb(1),px(unsplitmultivarpoly(p,innerdim));
 	find_good_eval(px,pb,vb); // need to modify find_good_eval for assumptions...
 	if (vb==vb0)
-	  *logptr(contextptr) << gettext("The choice was done assuming ") << params << "=" << vb << endl;       
+	  LOGMSG << gettext("The choice was done assuming ") << params << "=" << vb << endl;       
 	else 
-	  *logptr(contextptr) << gettext("Non regular value ") << vb0 << gettext(" was discarded and replaced randomly by ") << params << "=" << vb << endl;	
+	  LOGMSG << gettext("Non regular value ") << vb0 << gettext(" was discarded and replaced randomly by ") << params << "=" << vb << endl;	
 	racines=proot(gen2vecteur(evalf(polynome2poly1(pb),1,contextptr)));
       }
       else
@@ -1141,7 +1141,7 @@ namespace giac {
       return gentypeerr(gettext("rootof"));
     }
     if (e.type==_VECT && *e._VECTptr==makevecteur(1,0,1)){
-      *logptr(contextptr) << "rootof([1,0,1]) was converted to i" << endl;
+      LOGMSG << "rootof([1,0,1]) was converted to i" << endl;
       return cst_i;
     }
     if (e._VECTptr->size()==2 && e._VECTptr->front().type!=_VECT){
@@ -1155,7 +1155,7 @@ namespace giac {
     if (has_num_coeff(e))
       return approx_rootof(e,contextptr);
     if (!lop(lvar(e),at_pow).empty()){
-      *logptr(contextptr) << gettext("Algebraic extensions not allowed in a rootof")<<endl;
+      LOGMSG << gettext("Algebraic extensions not allowed in a rootof")<<endl;
       return approx_rootof(e,contextptr);
     }
     // should call factor before returning unevaluated rootof
@@ -1357,7 +1357,7 @@ namespace giac {
     else { 
       x=v[1]; a=v[2]; b=v[3]; 
       if (P.type==_VECT)
-	*logptr(contextptr) << gettext("Warning: variable name ignored: ") << x << endl;
+	LOGMSG << gettext("Warning: variable name ignored: ") << x << endl;
     }
     gen ai=im(a,contextptr);
     gen bi=im(b,contextptr);
@@ -1609,7 +1609,7 @@ namespace giac {
 	sto(savevar,var,contextptr);
     }
     if (w.empty() && debug_infolevel)
-      *logptr(contextptr) << gettext("Warning: ") << df << gettext("=0: no solution found") << endl;
+      LOGMSG << gettext("Warning: ") << df << gettext("=0: no solution found") << endl;
     vecteur wvar=makevecteur(cst_pi);
     lidnt(w,wvar,false);
     if (wvar.size()>1)

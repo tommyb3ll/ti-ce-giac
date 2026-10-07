@@ -209,7 +209,7 @@ namespace giac {
     if ( args.type==_STRNG && args.subtype==-1) return  args;
     //init_context((context *) ((void *) contextptr));
     gen res= _rm_all_vars(args,contextptr);
-    *logptr(contextptr) << "//=== restarted ===" << "\n";
+    LOGMSG << "//=== restarted ===" << "\n";
     if (args.type==_VECT && args.subtype==_SEQ__VECT && args._VECTptr->empty())
       _srand(_time(gen(vecteur(0),_SEQ__VECT),contextptr),contextptr);
     return res;
@@ -963,7 +963,7 @@ namespace giac {
       return gendimerr();
     vecteur a,b;
     if (!egcd_pade(Np,fp,p,a,b,0))
-      *logptr(contextptr) << gettext("Solution may be wrong since a and b are not prime together: ")+gen(a).print(contextptr)+","+gen(b).print(contextptr) << "\n";
+      LOGMSG << gettext("Solution may be wrong since a and b are not prime together: ")+gen(a).print(contextptr)+","+gen(b).print(contextptr) << "\n";
     gen res=poly12polynome(a,1,ls);
     res=res/(fd*gen(poly12polynome(b,1,ls)));
     res=r2sym(res,l,contextptr);
@@ -1320,12 +1320,12 @@ namespace giac {
     vecteur v;
     polynome P,Q,R;
     if (!is_hypergeometric(e,*n._IDNTptr,v,P,Q,R,contextptr)){
-      *logptr(contextptr) << gettext("Cst part must be hypergeometric") << "\n";
+      LOGMSG << gettext("Cst part must be hypergeometric") << "\n";
       remains=e;
       return 0;
     }
     if (Q.lexsorted_degree() || R.lexsorted_degree()){
-      *logptr(contextptr) << gettext("Cst part must be of type a^n*P(n)") << "\n";
+      LOGMSG << gettext("Cst part must be of type a^n*P(n)") << "\n";
       remains=e;
       return 0;
     }
@@ -1509,7 +1509,7 @@ namespace giac {
 	vecteur v;
 	polynome P,Q,R;
 	if (!is_hypergeometric(l,*n._IDNTptr,v,P,Q,R,contextptr)){
-	  *logptr(contextptr) << gettext("Cst part must be hypergeometric") << "\n";
+	  LOGMSG << gettext("Cst part must be hypergeometric") << "\n";
 	  return symb_seqsolve(args);
 	}
 	// l(n+1)/l(n) = P(n+1)/P(n)*Q(n)/R(n+1)
@@ -1518,7 +1518,7 @@ namespace giac {
 	it=R.coord.begin();
 	polynome r0=Tnextcoeff<gen>(it,R.coord.end()).untrunc1();
 	if (!is_zero(r0*Q-q0*R)){
-	  *logptr(contextptr) << gettext("Unable to handle coeff of homogeneous part") << "\n";
+	  LOGMSG << gettext("Unable to handle coeff of homogeneous part") << "\n";
 	  return symb_seqsolve(args);
 	}
 	// -> l(n)=l(0)*P(n)/P(0) -> product(l(n))
@@ -1558,12 +1558,12 @@ namespace giac {
 	    return sol+C*res;
 	  }
 	}
-	*logptr(contextptr) << gettext("Unable to find a particular solution for inhomogeneous part") << "\n";
+	LOGMSG << gettext("Unable to find a particular solution for inhomogeneous part") << "\n";
 	return symb_seqsolve(args);
       }
       gen d=linear_apply(c,n,l,remains,contextptr,rsolve);
       if (!is_zero(remains))
-	*logptr(contextptr) << gettext("Unable to solve recurrence") << "\n";
+	LOGMSG << gettext("Unable to solve recurrence") << "\n";
       // d is a particular solution of u(n+1)=l*u(n)+c(n)
       // add a general solution d(n)+C*l^n
       // such that at n=0 we get u0 -> C+d(0)=u0
@@ -1599,7 +1599,7 @@ namespace giac {
       c=normal(c,contextptr);
       gen remains,d=linear_apply(c,n,l,remains,contextptr,rsolve);
       if (!is_zero(remains))
-	*logptr(contextptr) << gettext("Unable to solve recurrence") << "\n";
+	LOGMSG << gettext("Unable to solve recurrence") << "\n";
       gen C=normal(vzero[i]-quotesubst(d,n,0,contextptr),contextptr);
       if (is_zero(l))
 	res[i]=d+C*symbolic(at_same,makesequence(n,0));

@@ -3230,7 +3230,7 @@ extern "C" void Sleep(unsigned int miliSecond);
 	}
       }
       if (instring){
-	*logptr(contextptr) << "Warning: multi-line strings can not be converted from Python like syntax"<<"\n";
+	LOGMSG << "Warning: multi-line strings can not be converted from Python like syntax"<<"\n";
 	return s_orig;
       }
       // detect : at end of line
@@ -3576,7 +3576,7 @@ extern "C" void Sleep(unsigned int miliSecond);
 	  s += ";";
       }
       if (debug_infolevel)
-	*logptr(contextptr) << "Translated to Xcas as:\n" << s << "\n";
+	LOGMSG << "Translated to Xcas as:\n" << s << "\n";
     }
     res.clear(); cur.clear();
     return string(s.begin(),s.end());

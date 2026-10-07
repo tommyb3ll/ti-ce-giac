@@ -682,7 +682,7 @@ namespace giac {
 #if defined RTOS_THREADX || defined NSPIRE || defined FXCG || defined TICE
     debug_infolevel=2;
     if (do_pollard)
-      *logptr(contextptr) << gettext("Pollard-rho on ") << a << "\n"; 
+      LOGMSG << gettext("Pollard-rho on ") << a << "\n"; 
 #else
     debug_infolevel=0;
 #endif

@@ -1083,7 +1083,7 @@ namespace giac {
     // If first.exponent!=0 and direction==0 we can not find 
     // first.exponent^e consistently around 0
     if (!direction && !is_integer(e) && !is_zero(first.exponent) ){
-      *logptr(contextptr) << gettext("Warning: vanishing non integral power expansion") << "\n";
+      LOGMSG << gettext("Warning: vanishing non integral power expansion") << "\n";
       /*
       res.clear();
       first.coeff=pow(first.coeff,e,contextptr);
@@ -1536,7 +1536,7 @@ namespace giac {
       if ((temp__SYMB.feuille.type==_IDNT) && (temp__SYMB.sommet!=at_abs)){ 
 	// Since e contains x feuille of e must be x
 	if (!temp__SYMB.sommet.ptr()->series_expansion){
-	  *logptr(contextptr) << gettext("no taylor method for ") << temp__SYMB.sommet.ptr()->print(contextptr) << "\n";
+	  LOGMSG << gettext("no taylor method for ") << temp__SYMB.sommet.ptr()->print(contextptr) << "\n";
 	  return false; 
 	}
 	gen shift_coeff;
@@ -1920,7 +1920,7 @@ namespace giac {
 	  return false; // setsizeerr();
 	addorder=temp__SYMB.feuille._VECTptr->back().val;
 	if (addorder<=0){
-	  *logptr(contextptr) << gettext("Psi/Zeta/Eta: bad second argument") << "\n";
+	  LOGMSG << gettext("Psi/Zeta/Eta: bad second argument") << "\n";
 	  return false;
 	}
 #ifndef XLIGHT
@@ -2537,7 +2537,7 @@ namespace giac {
 	}
       }
       if (lim_point==unsigned_inf){
-	*logptr(contextptr) << gettext("Warning, infinity is unsigned, perhaps you meant +infinity")<< "\n";
+	LOGMSG << gettext("Warning, infinity is unsigned, perhaps you meant +infinity")<< "\n";
 	first_try = subst(partfrac(e,false,contextptr),x,lim_point,false,contextptr);
 	// first_try = subst(ratnormal(e,contextptr),x,lim_point,false,contextptr);
       }
@@ -2805,7 +2805,7 @@ namespace giac {
 	}
       }
       if (temp._SYMBptr->feuille.type==_VECT){
-	*logptr(contextptr) << gettext("Limit probably undefined, algorithm unable to handle ")+temp.print(contextptr) << "\n";
+	LOGMSG << gettext("Limit probably undefined, algorithm unable to handle ")+temp.print(contextptr) << "\n";
 	return false;
       }
       gen l=in_limit(temp._SYMBptr->feuille,x,plus_inf,0,contextptr);
@@ -2815,7 +2815,7 @@ namespace giac {
 #endif
                           )
           ){
-	*logptr(contextptr) << gettext("Undef/Unsigned Inf encountered in limit") << "\n";
+	LOGMSG << gettext("Undef/Unsigned Inf encountered in limit") << "\n";
 	return false;
       }
       if (!is_inf(l)){
@@ -3361,14 +3361,14 @@ namespace giac {
       sparse_poly1 s(1,monome(1,1));
       sto(s,h,contextptr);
       series_flags(contextptr) = series_flags(contextptr) | (1<<5);
-      *logptr(contextptr) << "Setting " << ch << " as series variable name" << "\n";
+      LOGMSG << "Setting " << ch << " as series variable name" << "\n";
       string Os=abs_calc_mode(contextptr)==38?"b":"O";
       gen O(Os,contextptr);
       if (eval(O,1,contextptr)!=O)
-	*logptr(contextptr) << "Purge "<<Os<<" if you want to use "<<Os<<"("<< h <<"^...) notation"<< "\n";
+	LOGMSG << "Purge "<<Os<<" if you want to use "<<Os<<"("<< h <<"^...) notation"<< "\n";
       else {
 	gen prog=symb_program(vx_var(),0,vx_var()*symbolic(at_order_size,h),contextptr);
-	*logptr(contextptr) << "Assigning "<<Os<<" so that you can use use "<<Os<<"("<< h<<"^...) notation"<< "\n";
+	LOGMSG << "Assigning "<<Os<<" so that you can use use "<<Os<<"("<< h<<"^...) notation"<< "\n";
 	sto(prog,O,contextptr);
 	series_flags(contextptr)=series_flags(contextptr) | (1<<6) ;
       }
@@ -3494,7 +3494,7 @@ namespace giac {
       gen f0=f._VECTptr->front();
       gen x =f[1];
       if (x.type!=_IDNT){
-	*logptr(contextptr) << gettext("Unable to convert to euler mac laurin");
+	LOGMSG << gettext("Unable to convert to euler mac laurin");
 	return false;
       }
       gen f0prime=derive(f0,x,contextptr), f03=derive(f0prime,x,contextptr);

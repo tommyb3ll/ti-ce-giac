@@ -79,7 +79,7 @@ namespace giac {
       if (b.front().type==_VECT) {
 	// ddeg should be even if b0 is a _POLY1
 	if (ddeg%2==0)
-	  *logptr(contextptr) << gettext("Singular parametric Sturm sequence ") << a << "/" << b << endl;
+	  LOGMSG << gettext("Singular parametric Sturm sequence ") << a << "/" << b << endl;
       }
       else
 	b0=abs(b.front(),contextptr); 

@@ -2055,7 +2055,7 @@ static define_unary_function_eval (__set_language,&_scatterplot,_set_language_s)
     matrice m;
     vecteur d;
     if (!egv(*g._VECTptr,m,d,contextptr,false,false,true))
-      *logptr(contextptr) << gettext("Low accuracy") << "\n";
+      LOGMSG << gettext("Low accuracy") << "\n";
     complex_mode(b,contextptr);
     return gen(d,_SEQ__VECT);
   }
@@ -3133,7 +3133,7 @@ static define_unary_function_eval (__set_language,&_scatterplot,_set_language_s)
       sto(tval,t,contextptr);
     step_infolevel(st,contextptr);
     if (cx.type!=_VECT || cy.type!=_VECT){
-      *logptr(contextptr) << gettext("Unable to find critical points") << "\n";
+      LOGMSG << gettext("Unable to find critical points") << "\n";
       purgenoassume(t,contextptr);
       return 0;
     }
@@ -3143,14 +3143,14 @@ static define_unary_function_eval (__set_language,&_scatterplot,_set_language_s)
       c=mergevecteur(c,infl);
     }
     else
-      *logptr(contextptr) << gettext("Unable to find inflection points") << "\n";
+      LOGMSG << gettext("Unable to find inflection points") << "\n";
     for (int i=0;i<int(infl.size());++i)
       infl[i]=ratnormal(infl[i],contextptr);
     for (int i=0;i<int(c.size());++i)
       c[i]=ratnormal(c[i],contextptr);
     comprim(c);
     if (!lidnt(evalf(c,1,contextptr)).empty()){
-      *logptr(contextptr) << gettext("Infinite number of critical points. Try with optional argument ") << t << "=tmin..tmax" << "\n";
+      LOGMSG << gettext("Infinite number of critical points. Try with optional argument ") << t << "=tmin..tmax" << "\n";
       purgenoassume(t,contextptr);
       return 0;
     }
@@ -3575,7 +3575,7 @@ static define_unary_function_eval (__set_language,&_scatterplot,_set_language_s)
   int step_param(const gen & f,const gen & g,const gen & t,gen & tmin,gen&tmax,vecteur & poi,vecteur & tvi,bool printtvi,bool exactlegende,GIAC_CONTEXT,bool do_inflex){
     bool c=complex_mode(contextptr); int st=step_infolevel(contextptr),s=0;
     if (t==x__IDNT_e || t==y__IDNT_e)
-      *logptr(contextptr) << gettext("Warning, using x or y as variable in parametric plot may lead to confusion!") << "\n";
+      LOGMSG << gettext("Warning, using x or y as variable in parametric plot may lead to confusion!") << "\n";
     step_infolevel(0,contextptr);
 #ifdef NO_STDEXCEPT
     s=step_param_(f,g,t,tmin,tmax,poi,tvi,printtvi,exactlegende,contextptr,do_inflex);
@@ -3684,7 +3684,7 @@ static define_unary_function_eval (__set_language,&_scatterplot,_set_language_s)
     if (x!=xval)
       sto(xval,x,contextptr);
     if (c1.type!=_VECT){
-      *logptr(contextptr) << gettext("Unable to find critical points") << "\n";
+      LOGMSG << gettext("Unable to find critical points") << "\n";
       return 0;
     }
     if (c2.type==_VECT){
@@ -3692,19 +3692,19 @@ static define_unary_function_eval (__set_language,&_scatterplot,_set_language_s)
       c=gen(mergevecteur(gen2vecteur(c1),infl));
     }
     else
-      *logptr(contextptr) << gettext("Unable to find convexity") << "\n";
+      LOGMSG << gettext("Unable to find convexity") << "\n";
     // if (c.type==_VECT && c._VECTptr->empty()) c=_fsolve(makesequence(f,x),contextptr);
 #else
     gen c=critical(makesequence(f,x),false,contextptr);
     step_infolevel(st,contextptr);
     if (c.type!=_VECT){
-      *logptr(contextptr) << gettext("Unable to find critical points") << "\n";
+      LOGMSG << gettext("Unable to find critical points") << "\n";
       purgenoassume(x,contextptr);
       return 0;
     }
 #endif
     if (!lidnt(evalf(c,1,contextptr)).empty()){
-      *logptr(contextptr) << gettext("Infinite number of critical points. Try with optional argument ") << x << "=xmin..xmax" << "\n";
+      LOGMSG << gettext("Infinite number of critical points. Try with optional argument ") << x << "=xmin..xmax" << "\n";
       purgenoassume(x,contextptr);
       return 0;
     }
@@ -4402,7 +4402,7 @@ static define_unary_function_eval (__set_language,&_scatterplot,_set_language_s)
     if (withstddev){
       m2 -= apply(s,apply(m,m,prod),prod);
       if (s.type!=_VECT && is_greater(1,s,contextptr) && withstddev==2)
-	*logptr(contextptr) << "stddevp called with N<=1, perhaps you are misusing this command with frequencies" << "\n";
+	LOGMSG << "stddevp called with N<=1, perhaps you are misusing this command with frequencies" << "\n";
       m2=apply(m2,s-(withstddev==2),contextptr,rdiv);
       if (withstddev==3)
 	return m2;
@@ -7140,7 +7140,7 @@ inline void check_freeze(){
 		  res.push_back(b+fxf*cst_i);
 		}
 		res.push_back(b);
-		*logptr(contextptr) << "Approx area " << A << "\n";
+		LOGMSG << "Approx area " << A << "\n";
 		return makesequence(A,pnt_attrib(res,attributs,contextptr),_couleur(makesequence(graph,_RED+_DASH_LINE+_LINE_WIDTH_3),contextptr));
 	      } // end if (s>=3)
 	    } // end polyg.type==_VECT

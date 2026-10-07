@@ -1125,7 +1125,7 @@ namespace giac {
   static gen spread_eval(matrice & m,int m_row,int m_col,GIAC_CONTEXT){
     control_c();
     if (interrupted){
-      *logptr(contextptr) << gettext("Interrupted ") << m_row << " " << m_col << '\n';
+      LOGMSG << gettext("Interrupted ") << m_row << " " << m_col << '\n';
       return undef;
     }
     const gen &g1=m[m_row][m_col];
@@ -1283,7 +1283,7 @@ namespace giac {
     spread_Row(-1,contextptr);
     spread_Col(-1,contextptr);
     if (interrupted)
-      *logptr(contextptr) << gettext("Spreadsheet evaluation interrupted") << '\n';
+      LOGMSG << gettext("Spreadsheet evaluation interrupted") << '\n';
   }
   
 #endif
@@ -4719,7 +4719,7 @@ namespace giac {
     if (keep_pivot)
       return gensizeerr(gettext("Option keep_pivot not applicable"));
     if (!is_squarematrix(a))
-      *logptr(contextptr) << gettext("Warning: non-square matrix!") << "\n";
+      LOGMSG << gettext("Warning: non-square matrix!") << "\n";
     vecteur pivots;
     matrice res;
     gen determinant;
@@ -5726,7 +5726,7 @@ namespace giac {
       pipd += std::log10(double(currentp.val));
     }
     if (pipd<testvalue)
-      *logptr(contextptr) << gettext("Probabilistic answer. Run proba_epsilon:=0 for a certified result. Error <") << proba << "\n";
+      LOGMSG << gettext("Probabilistic answer. Run proba_epsilon:=0 for a certified result. Error <") << proba << "\n";
     return charpol;
   } // end if (is_integer_matrix)
 #endif
@@ -6018,7 +6018,7 @@ namespace giac {
 	if (j==i) continue;
 #ifndef GIAC_HAS_STO_38
 	if (ans && j==i-1 && is_greater(abs(di[j]/di[j+1],contextptr),eps,contextptr)){
-	  *logptr(contextptr) << gettext("Low accuracy for Schur row ") << j << " " << d[i] << "\n";
+	  LOGMSG << gettext("Low accuracy for Schur row ") << j << " " << d[i] << "\n";
 	  ans=false;
 	}
 #endif
@@ -6114,7 +6114,7 @@ namespace giac {
 	}
 #if 0 // ndef NO_RTTI
 	if (extdeg>1){
-	  *logptr(contextptr) << "Creating splitting field extension GF(" << modulo << "," << extdeg << ")" << "\n";
+	  LOGMSG << "Creating splitting field extension GF(" << modulo << "," << extdeg << ")" << "\n";
 	  gen tmp=_galois_field(makesequence(modulo,extdeg),contextptr);
 	  tmp=tmp[plus_two];
 	  tmp=eval(tmp[2],1,contextptr); // field generator
@@ -6123,7 +6123,7 @@ namespace giac {
 #endif
       }
       else
-	*logptr(contextptr) << "Warning! Automatic extension not implemented. You can try to diagonalize the matrix * a non trivial element of GF(" << modulo << ",lcm of degrees of factor(" << symb_horner(p_car,vx_var()) << "))" <<  "\n";
+	LOGMSG << "Warning! Automatic extension not implemented. You can try to diagonalize the matrix * a non trivial element of GF(" << modulo << ",lcm of degrees of factor(" << symb_horner(p_car,vx_var()) << "))" <<  "\n";
     }
 #if 0 // ndef NO_RTTI
     if (has_gf_coeff(p_car,modulo,fieldpmin)){
@@ -6139,7 +6139,7 @@ namespace giac {
 	}
 	if (extdeg>1){
 	  extdeg *= gfsize(fieldpmin);
-	  *logptr(contextptr) << "Creating splitting field extension GF(" << modulo << "," << extdeg << ")" << "\n";
+	  LOGMSG << "Creating splitting field extension GF(" << modulo << "," << extdeg << ")" << "\n";
 	  gen tmp=_galois_field(makesequence(modulo,extdeg),contextptr);
 	  tmp=tmp[plus_two];
 	  tmp=eval(tmp[2],1,contextptr); // field generator
@@ -6285,7 +6285,7 @@ namespace giac {
 	      && is_numericm(*m0num._VECTptr)
 	      // && lidnt(m0num).empty()
 	      ){
-	    *logptr(contextptr) << gettext("Unable to find exact eigenvalues. Trying approx") << "\n";
+	    LOGMSG << gettext("Unable to find exact eigenvalues. Trying approx") << "\n";
 	    return egv(*m0num._VECTptr,p,d,contextptr,jordan,false,eigenvalues_only);
 	  }
 	}
@@ -6456,7 +6456,7 @@ namespace giac {
     bool b=complex_mode(contextptr);
     complex_mode(true,contextptr);
     if (!egv(e,m,d,contextptr,false,false,false))
-      *logptr(contextptr) << gettext("Low accuracy or not diagonalizable at some eigenvalue. Try jordan if the matrix is exact.") << "\n";
+      LOGMSG << gettext("Low accuracy or not diagonalizable at some eigenvalue. Try jordan if the matrix is exact.") << "\n";
     complex_mode(b,contextptr);
     return m;
   }
@@ -6484,7 +6484,7 @@ namespace giac {
     bool b=complex_mode(contextptr);
     complex_mode(true,contextptr);
     if (!egv(e,m,d,contextptr,true,false,true))
-      *logptr(contextptr) << gettext("Low accuracy") << "\n";
+      LOGMSG << gettext("Low accuracy") << "\n";
     complex_mode(b,contextptr);
     return d;
   }
@@ -6505,7 +6505,7 @@ namespace giac {
     matrice m;
     vecteur d;
     if (!egv(e,m,d,contextptr,true,rational_jordan,false))
-      *logptr(contextptr) << gettext("Low accuracy") << "\n";
+      LOGMSG << gettext("Low accuracy") << "\n";
     return makevecteur(m,d);
   }
   gen symb_jordan(const gen & a){
@@ -7147,14 +7147,14 @@ namespace giac {
       return symbolic(at_svd,args);
     // if (!is_zero(im(args,contextptr),contextptr)) return gensizeerr(gettext("Complex entry!"));
     if (!has_num_coeff(args))
-      *logptr(contextptr) << gettext("Warning: svd is implemented for numeric matrices") << "\n";
+      LOGMSG << gettext("Warning: svd is implemented for numeric matrices") << "\n";
     gen argsf=args;
     bool real=is_zero(im(argsf,contextptr));
     // non numeric code/also for complex
     if (!ckmatrix(argsf))
       return gensizeerr(contextptr);
     if (!lidnt(argsf).empty())
-      *logptr(contextptr) << "Warning: SVD for symbolic matrix may fail!" << "\n";
+      LOGMSG << "Warning: SVD for symbolic matrix may fail!" << "\n";
     matrice M=*argsf._VECTptr;
     bool transposed=M.size()<M.front()._VECTptr->size();
     if (transposed){
@@ -7218,7 +7218,7 @@ namespace giac {
       d[i]=vi;
     }
      if (smallsvl)
-       *logptr(contextptr) << "Warning, ill-conditionned matrix, " << smallsvl << " small singular values were replaced by 0. Result is probably wrong." << "\n";    
+       LOGMSG << "Warning, ill-conditionned matrix, " << smallsvl << " small singular values were replaced by 0. Result is probably wrong." << "\n";    
     if (method==-2){
       if (transposed){
 	int add0=int(M.size()-M.front()._VECTptr->size());

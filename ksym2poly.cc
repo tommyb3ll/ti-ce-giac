@@ -804,7 +804,7 @@ namespace giac {
 	// cerr << "xroot" << num << "\n";
 	gen numlv=r2sym(num,lv,contextptr);
 	if (!lvar(evalf(numlv,1,contextptr)).empty())
-	  *logptr(contextptr) << gettext("Warning, checking for positivity of a root depending of parameters might return wrong sign: ")<< numlv << "\n";
+	  LOGMSG << gettext("Warning, checking for positivity of a root depending of parameters might return wrong sign: ")<< numlv << "\n";
 	if (is_positive(numlv,contextptr))
 	  break;
       }
@@ -2322,7 +2322,7 @@ namespace giac {
 	      tmp2=accurate_evalf_until(tmp2,contextptr);// tmp2.evalf_double(1,contextptr); 
 	      if (tmp3.type<=_CPLX && tmp2.type<=_CPLX && tmp2!=tmp3){
 		if (!vzero.empty() && !tst)
-		  *logptr(contextptr) << gettext("Warning, choosing root of ") << f << gettext(" at parameters values ") << vzero << "\n";
+		  LOGMSG << gettext("Warning, choosing root of ") << f << gettext(" at parameters values ") << vzero << "\n";
 		if (is_greater(abs(tmp3-tmp00,contextptr),abs(tmp2-tmp00,contextptr),contextptr))
 		  return w.back();
 		else
@@ -2836,7 +2836,7 @@ namespace giac {
       sort0(l);
       //dbg_printf("normal c\n");
       if (!L.empty() && debug_infolevel)
-	*logptr(contextptr) << gettext("Making implicit assumption for sqrt argument ") << L << "\n";
+	LOGMSG << gettext("Making implicit assumption for sqrt argument ") << L << "\n";
       if (contextptr && contextptr->previous)
 	L.clear(); // otherwise ggbsort(x):=sort(x); r:=[sqrt(a)/a,1]; ggbsort(r); VARS(); keeps implicit assumption a>=0 globally
       //dbg_printf("normal d\n");
@@ -2852,7 +2852,7 @@ namespace giac {
 #endif
 	if (calc_mode(contextptr)==1)
 	  return undef;
-	*logptr(contextptr) << gettext("Unable to build a single algebraic extension for simplifying.\nTrying rational simplification only. This might return a wrong answer if simplifying 0/0!") << "\n";
+	LOGMSG << gettext("Unable to build a single algebraic extension for simplifying.\nTrying rational simplification only. This might return a wrong answer if simplifying 0/0!") << "\n";
 	l=lvar(ee);
 	tmp=e2r(ee,l,contextptr);	
 	gen tmpf=evalf_double(ee-tmp,1,contextptr);
@@ -3747,7 +3747,7 @@ namespace giac {
   gen _factor(const gen & args,GIAC_CONTEXT){
     if ( args.type==_STRNG && args.subtype==-1) return  args;
     if (is_integer(args))
-      *logptr(contextptr) << "Run ifactor(" << args << ") for integer factorization." << "\n";
+      LOGMSG << "Run ifactor(" << args << ") for integer factorization." << "\n";
     if (is_equal(args))
       return apply_to_equal(args,_factor,contextptr);
     if (args.type==_VECT && args._VECTptr->size()==2 && is_equal(args._VECTptr->front())){

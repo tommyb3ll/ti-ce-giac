@@ -4197,9 +4197,9 @@ int confirm(const char * msg1,const char * msg2,bool acexit=false);
             }
           }
           if (nb<0)
-            *logptr(contextptr) << "Too many ]" << "\n";
+            LOGMSG << "Too many ]" << "\n";
           if (np<0)
-            *logptr(contextptr) << "Too many )" << "\n";
+            LOGMSG << "Too many )" << "\n";
           while (np<0 && i>=0 && s[i-1]==')'){
             --i;
             ++np;
@@ -4210,11 +4210,11 @@ int confirm(const char * msg1,const char * msg2,bool acexit=false);
           }
           s=s.substr(0,i);
           if (nb>0){
-            *logptr(contextptr) << "Warning adding " << nb << " ] at end of input" << "\n";
+            LOGMSG << "Warning adding " << nb << " ] at end of input" << "\n";
             s += string(nb,']');
           }
           if (np>0){
-            *logptr(contextptr) << "Warning adding " << np << " ) at end of input" << "\n";
+            LOGMSG << "Warning adding " << np << " ) at end of input" << "\n";
             s += string(np,')');
           }
         }

@@ -508,7 +508,7 @@ namespace giac {
     if (g.is_symb_of_sommet(at_ifte) || g.is_symb_of_sommet(at_when)){
       vecteur v=lop(g,at_array_sto);
       if (!v.empty() && logptr(contextptr))
-	*logptr(contextptr) << gettext("Warning, =< is in-place assign, check ") << v << "\n";
+	LOGMSG << gettext("Warning, =< is in-place assign, check ") << v << "\n";
     }
     if (g.is_symb_of_sommet(at_bloc) || 
 	g.is_symb_of_sommet(at_for) ||
@@ -929,7 +929,7 @@ namespace giac {
       if (it->is_symb_of_sommet(at_sto) || it->is_symb_of_sommet(at_check_type) || it->is_equal()) // FIXME check 1st arg too
 	continue;
       if (it->is_symb_of_sommet(at_of)){
-	*logptr(contextptr) << gettext("Invalid argument name ") << *it << gettext(". You should use ") << it->_SYMBptr->feuille._VECTptr->front() << gettext(" instead, even if the argument should be of type function") << "\n";
+	LOGMSG << gettext("Invalid argument name ") << *it << gettext(". You should use ") << it->_SYMBptr->feuille._VECTptr->front() << gettext(" instead, even if the argument should be of type function") << "\n";
 	*it=it->_SYMBptr->feuille._VECTptr->front();
       }
       if (it->is_symb_of_sommet(at_deuxpoints)){
@@ -1040,7 +1040,7 @@ namespace giac {
     if (v1.empty())
       newb=b;
     else {
-      *logptr(contextptr) << gettext("Invalid or typed variable(s) name(s) were replaced by creating special identifiers, check ") << v1 << "\n";
+      LOGMSG << gettext("Invalid or typed variable(s) name(s) were replaced by creating special identifiers, check ") << v1 << "\n";
       newb=quotesubst(b,v1,v2,contextptr);
     }
   }
@@ -1071,10 +1071,10 @@ namespace giac {
       warn=true;
 #endif
     if (warn){
-      *logptr(contextptr) << gettext("// Parsing ") << d << "\n";
+      LOGMSG << gettext("// Parsing ") << d << "\n";
       lastprog_name(d.print(contextptr),contextptr);
       if (c.is_symb_of_sommet(at_derive))
-	*logptr(contextptr) << gettext("Warning, defining a derivative function should be done with function_diff or unapply: ") << c << "\n";
+	LOGMSG << gettext("Warning, defining a derivative function should be done with function_diff or unapply: ") << c << "\n";
        if (c.type==_SYMB && c._SYMBptr->sommet!=at_local && c._SYMBptr->sommet!=at_bloc && c._SYMBptr->sommet!=at_when && c._SYMBptr->sommet!=at_for && c._SYMBptr->sommet!=at_ifte){
 	 vecteur lofc=lop(c,at_of);
 	 vecteur lofc_no_d;
@@ -1084,9 +1084,9 @@ namespace giac {
 	     lofc_no_d.push_back(lofc[i]);
 	 }
 	 if (!lofc_no_d.empty()){
-	   *logptr(contextptr) << gettext("Warning: algebraic function defined in term of others functions may lead to evaluation errors") << "\n";
+	   LOGMSG << gettext("Warning: algebraic function defined in term of others functions may lead to evaluation errors") << "\n";
 	   CERR << c.print(contextptr) << "\n";
-	   *logptr(contextptr) << gettext("Perhaps you meant ") << d.print(contextptr) << ":=unapply(" << c.print(contextptr) << ",";
+	   LOGMSG << gettext("Perhaps you meant ") << d.print(contextptr) << ":=unapply(" << c.print(contextptr) << ",";
 	   if (a.type==_VECT && a.subtype==_SEQ__VECT && a._VECTptr->size()==1)
 	     *logptr(contextptr) << a._VECTptr->front().print(contextptr) << ")" << "\n";
 	   else
@@ -1181,7 +1181,7 @@ namespace giac {
 	}
       }
       if (!non_decl.empty()){
-	*logptr(contextptr) << gettext("// Auto-declared local variables : ") << gen(non_decl,_SEQ__VECT) << "\n";
+	LOGMSG << gettext("// Auto-declared local variables : ") << gen(non_decl,_SEQ__VECT) << "\n";
 	if (glob)
 	  newc=symb_local(makesequence(non_decl,clocg._VECTptr->back()),newc._SYMBptr->feuille._VECTptr->back(),contextptr);
 	else
@@ -1200,7 +1200,7 @@ namespace giac {
 	gen inters=_intersect(makesequence(vars,newa),contextptr);
 	if (inters.type==_VECT && !inters._VECTptr->empty()){
 	  inters.subtype=_SEQ__VECT;
-	  *logptr(contextptr) << gettext("Warning: Local variables shadow function arguments ") << inters << "\n";
+	  LOGMSG << gettext("Warning: Local variables shadow function arguments ") << inters << "\n";
 	}
       }
     }
@@ -2359,7 +2359,7 @@ namespace giac {
 #endif
 	      if (ctrl_c || interrupted || (res.type==_STRNG && res.subtype==-1)){
 		interrupted = true; ctrl_c=false;
-		*logptr(contextptr) << gettext("Stopped in loop") << "\n";
+		LOGMSG << gettext("Stopped in loop") << "\n";
 		gensizeerr(gettext("Stopped by user interruption."),res);
 		break;
 	      }
@@ -2494,7 +2494,7 @@ namespace giac {
 	  else { 
 	    if (jt->_SYMBptr->sommet==at_of){
 	      tmp=jt->_SYMBptr->feuille._VECTptr->front();
-	      *logptr(contextptr) << gettext("Invalid variable ")+jt->print(contextptr)+gettext(" using ")+tmp.print(contextptr)+gettext(" instead.");
+	      LOGMSG << gettext("Invalid variable ")+jt->print(contextptr)+gettext(" using ")+tmp.print(contextptr)+gettext(" instead.");
 	    }
 	    else 
 	      tmp=*jt;
@@ -2511,7 +2511,7 @@ namespace giac {
 	  switch (name[bl-1]){
 	  case 'd':
 	    if (a.type!=_INT_ && a.type!=_DOUBLE_ && a.type!=_FRAC){
-	      *logptr(contextptr) << gettext("Unable to convert to float ")+a.print(contextptr) << "\n";
+	      LOGMSG << gettext("Unable to convert to float ")+a.print(contextptr) << "\n";
 	      return -RAND_MAX;
 	    }
 	    break;
@@ -2522,13 +2522,13 @@ namespace giac {
 	    if (a.type==_DOUBLE_ && a._DOUBLE_val<=RAND_MAX && a._DOUBLE_val>=-RAND_MAX){
 	      int i=int(a._DOUBLE_val);
 	      if (i!=a._DOUBLE_val)
-		*logptr(contextptr) << gettext("Converting ") << a._DOUBLE_val << gettext(" to integer ") << i << "\n";
+		LOGMSG << gettext("Converting ") << a._DOUBLE_val << gettext(" to integer ") << i << "\n";
 	      a=i;
 	    }
 	    else{
 	      if (a.type!=_INT_){
 		if (a.type!=_ZINT || mpz_sizeinbase(*a._ZINTptr,2)>62){
-		  *logptr(contextptr) << gettext("Unable to convert to integer ")+a.print(contextptr) << "\n";
+		  LOGMSG << gettext("Unable to convert to integer ")+a.print(contextptr) << "\n";
 		  return -RAND_MAX;
 		}
 	      }
@@ -2536,7 +2536,7 @@ namespace giac {
 	    break;
 	  case 'v':
 	    if (a.type!=_VECT){
-	      *logptr(contextptr) << gettext("Unable to convert to vector ")+a.print(contextptr) << "\n";
+	      LOGMSG << gettext("Unable to convert to vector ")+a.print(contextptr) << "\n";
 	      return -RAND_MAX;
 	    }
 	    break;
@@ -2555,7 +2555,7 @@ namespace giac {
 #ifndef NO_STDEXCEPT
 	  setsizeerr(gettext("Reserved word:")+tmp.print(contextptr));
 #else
-	  *logptr(contextptr) << gettext("Reserved word:")+tmp.print(contextptr) << "\n";
+	  LOGMSG << gettext("Reserved word:")+tmp.print(contextptr) << "\n";
 #endif
 	  return -RAND_MAX;
 	}
@@ -2563,7 +2563,7 @@ namespace giac {
 #ifndef NO_STDEXCEPT
 	  setsizeerr(gettext("Not bindable")+tmp.print(contextptr));
 #else
-	  *logptr(contextptr) << gettext("Not bindable")+tmp.print(contextptr) << "\n";
+	  LOGMSG << gettext("Not bindable")+tmp.print(contextptr) << "\n";
 #endif
 	  return -RAND_MAX;
 	}
@@ -5148,8 +5148,8 @@ namespace giac {
       } // end "\n"ess for loop
     } // end thread debugging
 #if (defined WIN32) || (!defined HAVE_SIGNAL_H_OLD)
-    *logptr(contextptr) << gettext("Sorry! Debugging requires a true operating system") << "\n";
-    *logptr(contextptr) << gettext("Please try xcas on Linux or an Unix") << "\n";
+    LOGMSG << gettext("Sorry! Debugging requires a true operating system") << "\n";
+    LOGMSG << gettext("Please try xcas on Linux or an Unix") << "\n";
     return;
 #else // WIN32
     if (child_id)
@@ -5193,7 +5193,7 @@ namespace giac {
 #endif
       ofstream child_out(cas_sortie_name().c_str());
       gen e(symbolic(at_debug,w));
-      *logptr(contextptr) << gettext("Archiving ") << e << "\n";
+      LOGMSG << gettext("Archiving ") << e << "\n";
       archive(child_out,e,contextptr);
       archive(child_out,zero,contextptr);
       child_out << "Debugging\n" << '¤' ;
@@ -5202,7 +5202,7 @@ namespace giac {
       ifstream child_in(cas_entree_name().c_str());
       w[1]= unarchive(child_in,contextptr);
       child_in.close();
-      *logptr(contextptr) << gettext("Click reads ") << w[1] << "\n";
+      LOGMSG << gettext("Click reads ") << w[1] << "\n";
       if (w[1].type==_SYMB){
 	if (w[1]._SYMBptr->sommet==at_sst){
 	  debug_ptr(contextptr)->sst_in_mode=false;
@@ -5717,7 +5717,7 @@ namespace giac {
     if (v.size()<7)
       return false;
     if (logptr(contextptr) && debug_infolevel) 
-      *logptr(contextptr) << gettext("Cas_setup ") << v << char(10) << char(13) ;
+      LOGMSG << gettext("Cas_setup ") << v << char(10) << char(13) ;
     if (v[0].type==_INT_)
       approx_mode((v[0].val)!=0,contextptr);
     else {
@@ -5918,7 +5918,7 @@ namespace giac {
 #ifndef NO_STDEXCEPT
 	setsizeerr(gettext("Unable to sort ")+sorting_function.print(contextptr)+"("+ab.print(contextptr)+")="+c.print(contextptr));
 #else
-	*logptr(contextptr) << gettext("Unable to sort ")+sorting_function.print(contextptr)+"("+ab.print(contextptr)+")="+c.print(contextptr) << "\n";
+	LOGMSG << gettext("Unable to sort ")+sorting_function.print(contextptr)+"("+ab.print(contextptr)+")="+c.print(contextptr) << "\n";
 #endif
 	return true;
       }
@@ -6758,7 +6758,7 @@ namespace giac {
       if (g.type==_MAP){
 	if (f==at_matrix || f==at_vector){
 	  if (g.subtype==_SPARSE_MATRIX)
-	    *logptr(contextptr) << gettext("Run convert(matrix,array) for dense conversion") << "\n";
+	    LOGMSG << gettext("Run convert(matrix,array) for dense conversion") << "\n";
 	  g.subtype=_SPARSE_MATRIX;
 	  return g;
 	}
@@ -6915,7 +6915,7 @@ namespace giac {
 	  return 0;
       }
     }
-    *logptr(contextptr) << "Opening " << filename << "\n";
+    LOGMSG << "Opening " << filename << "\n";
     string s;
     for (;!feof(f);){
       char c=fgetc(f);
@@ -7056,7 +7056,7 @@ namespace giac {
     }
     if (fname.size()>200) fname=fname.substr(0,200);
     fname = "\\\\fls0\\"+fname;
-    *logptr(contextptr) << "Write "<<fname << "\n";
+    LOGMSG << "Write "<<fname << "\n";
     size_t size=fname.size();    
     unsigned short pFile[256];
     Bfile_StrToName_ncpy(pFile, fname.c_str(), size+1);
@@ -7227,11 +7227,11 @@ namespace giac {
     if (cas_setup_save.size()>5 && cas_setup_save[5].type==_VECT && cas_setup_save[5]._VECTptr->size()==2){
       vecteur & v = *cas_setup_save[5]._VECTptr;
       if (is_strictly_greater(v[0],1e-6,contextptr)){
-	*logptr(contextptr) << gettext("Restoring epsilon to 1e-6 from ") << v[0] << "\n";
+	LOGMSG << gettext("Restoring epsilon to 1e-6 from ") << v[0] << "\n";
 	epsilon(1e-6,contextptr);
       }
       if (is_strictly_greater(v[1],1e-6,contextptr)){
-	*logptr(contextptr) << gettext("Restoring proba epsilon to 1e-6 from ") << v[0] << "\n";
+	LOGMSG << gettext("Restoring proba epsilon to 1e-6 from ") << v[0] << "\n";
 	proba_epsilon(contextptr)=1e-6;
       }
       cas_setup_save=cas_setup(contextptr);
@@ -11038,11 +11038,11 @@ const mksa_unit __lambda0_unit={1.239841984e-6,1,0,0,0,0,0,0}; // inverse meter-
       }
     }
     if (is_equal(v[0]) || v[0].is_symb_of_sommet(at_same)){
-      *logptr(contextptr) << gettext("Assuming false condition ") << v[0].print(contextptr) << "\n";
+      LOGMSG << gettext("Assuming false condition ") << v[0].print(contextptr) << "\n";
       return v[2];
     }
     if (v[0].is_symb_of_sommet(at_different)){
-      *logptr(contextptr) << gettext("Assuming true condition ") << v[0].print(contextptr) << "\n";
+      LOGMSG << gettext("Assuming true condition ") << v[0].print(contextptr) << "\n";
       return v[1];
     }
     bool ok=false;

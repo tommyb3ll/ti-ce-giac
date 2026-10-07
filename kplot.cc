@@ -711,7 +711,7 @@ namespace giac {
 
   bool ck_parameter(const gen & g,GIAC_CONTEXT){
     if ( (g.type==_IDNT) && (g.evalf(1,contextptr)!=g) ){
-      *logptr(contextptr) << gettext("Variable ")+g.print(contextptr)+gettext(" should be purged") << "\n";
+      LOGMSG << gettext("Variable ")+g.print(contextptr)+gettext(" should be purged") << "\n";
       return false;
     }
     return true;
@@ -1660,7 +1660,7 @@ namespace giac {
 #ifdef RELEASE
     if (is_undef(a)) return a;
     if (a.type==_STRNG){
-      *logptr(contextptr) << gettext("Use pencolor for the turtle") << "\n";
+      LOGMSG << gettext("Use pencolor for the turtle") << "\n";
       return _couleur(gen(*a._STRNGptr,contextptr),contextptr);
     }
     if (a.type==_INT_){
@@ -1799,11 +1799,11 @@ namespace giac {
 	  for (i=0;i<vs/2;++i){
 	    gen cond=piecev[2*i];
 	    if (is_equal(cond) || cond.is_symb_of_sommet(at_same)){
-	      *logptr(contextptr) << gettext("Assuming false condition ") << cond << "\n";
+	      LOGMSG << gettext("Assuming false condition ") << cond << "\n";
 	      continue;
 	    }
 	    if (cond.is_symb_of_sommet(at_different)){
-	      *logptr(contextptr) << gettext("Assuming true condition ") << cond << "\n";
+	      LOGMSG << gettext("Assuming true condition ") << cond << "\n";
 	      f=quotesubst(f,piece,piecev[2*i+1],contextptr);
 	      return plotfunc(f,vars,attributs,densityplot,function_xmin,function_xmax,function_ymin,function_ymax,function_zmin,function_zmax,nstep,jstep,showeq,contextptr);
 	    }
@@ -2234,7 +2234,7 @@ namespace giac {
     gen a1(zero),a2(cst_two_pi);
 #if 0
     if (s==1+narg){
-      *logptr(contextptr) << "Assuming circumcircle call" << "\n";
+      LOGMSG << "Assuming circumcircle call" << "\n";
       return _circonscrit(args,contextptr);
     }
 #endif
@@ -2936,10 +2936,10 @@ namespace giac {
     gen v0=eval(v[0],1,contextptr);
     gen v1=eval(v[1],1,contextptr);
     if (s>1 && v0.type<=_REAL && v1.type<=_REAL){
-      *logptr(contextptr) << gettext("To get a point, run point(")<<v0<<","<<v1<<")" << "\n";
+      LOGMSG << gettext("To get a point, run point(")<<v0<<","<<v1<<")" << "\n";
     }
     if (s>1 && v0.type==_VECT && v1.type==_VECT && v0._VECTptr->size()==v1._VECTptr->size()){
-      *logptr(contextptr) << gettext("Assuming you want to run polygonplot") << "\n";
+      LOGMSG << gettext("Assuming you want to run polygonplot") << "\n";
       vecteur w0=*v0._VECTptr,w1=*v1._VECTptr;
       int ss=w0.size(),i;
       for (i=0;i<ss;++i){
@@ -3339,7 +3339,7 @@ namespace giac {
     gen fp=v[0];
     if (fp.is_equal() && fp._SYMBptr->feuille[0].type==_INT_){
       fp=fp._SYMBptr->feuille[1];
-      *logptr(contextptr) << "Warning, replacing plotode(" << v[0] << " by plotode(" << fp << "\n";
+      LOGMSG << "Warning, replacing plotode(" << v[0] << " by plotode(" << fp << "\n";
     }
     if (fp.type!=_VECT) // y'=f(x,y)
       fp=makevecteur(plus_one,fp);
@@ -3515,7 +3515,7 @@ namespace giac {
       // accept plotfield(y'=f(t,y),...) instead of plotfield(f(t,y),...)
       gen f=v[0]._SYMBptr->feuille;
       if (f.type==_VECT && f._VECTptr->size()==2 && f._VECTptr->front().type==_INT_){
-	*logptr(contextptr) << "Warning, replacing plotfield of " << v[0] << " by " << f._VECTptr->back() << "\n";
+	LOGMSG << "Warning, replacing plotfield of " << v[0] << " by " << f._VECTptr->back() << "\n";
 	v[0]=f._VECTptr->back(); 
       }
     }

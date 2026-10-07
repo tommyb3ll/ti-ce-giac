@@ -427,7 +427,7 @@ namespace giac {
       polynome Dp_content;
       gen extra_div=1;
       if (!factor(Dp,Dp_content,fd,false,true,true,1,extra_div) || extra_div!=1){
-	*logptr(contextptr) << gettext("Unable to factor ") << r2sym(Dp,vX,contextptr) << "\n";
+	LOGMSG << gettext("Unable to factor ") << r2sym(Dp,vX,contextptr) << "\n";
 	res=undef;
 	return true;
       }
@@ -436,7 +436,7 @@ namespace giac {
       factorization::const_iterator f_it=fd.begin(),f_itend=fd.end();
       for (;f_it!=f_itend;++f_it){
 	if (f_it->fact.degree(0)>1){
-	  *logptr(contextptr) << gettext("Unable to factor ") << r2sym(f_it->fact,vX,contextptr) << "\n";
+	  LOGMSG << gettext("Unable to factor ") << r2sym(f_it->fact,vX,contextptr) << "\n";
 	  res=undef;
 	  return true;
 	}
@@ -729,7 +729,7 @@ namespace giac {
 	  for (int i=0;i<s;++i){
 	    if (is_real(v[i],contextptr)){
 	      res=undef; // singularity on the real axis
-	      *logptr(contextptr) << gettext("Warning: pole at ") << v[i] << "\n";
+	      LOGMSG << gettext("Warning: pole at ") << v[i] << "\n";
 	      purgenoassume(gt,contextptr);
 	      return false;
 	    }
@@ -821,7 +821,7 @@ namespace giac {
       return true;
     }
     if (a==unsigned_inf || b==unsigned_inf){
-      *logptr(contextptr) << gettext("Please use +infinity or -infinity since infinity is unsigned") << "\n";
+      LOGMSG << gettext("Please use +infinity or -infinity since infinity is unsigned") << "\n";
       return false;
     }
     if (is_strictly_greater(a,b,contextptr)){
@@ -958,7 +958,7 @@ namespace giac {
       if (heav.type==_VECT && heav._VECTptr->size()==2 && heav._VECTptr->back().type==_INT_ ){
 	int diracorder=heav._VECTptr->back().val;
 	if (diracorder<0){
-	  *logptr(contextptr) << gettext("Negative second Dirac argument") << "\n";
+	  LOGMSG << gettext("Negative second Dirac argument") << "\n";
 	  return false;
 	}
 	A=derive(A,x,diracorder,contextptr);
@@ -976,7 +976,7 @@ namespace giac {
       if (ck_is_greater(c,a,contextptr) && ck_is_greater(b,c,contextptr))
 	res += quotesubst(A,x,c,contextptr);
       else
-	*logptr(contextptr) << gettext("Warning, Dirac function outside summation interval") << "\n";
+	LOGMSG << gettext("Warning, Dirac function outside summation interval") << "\n";
       return true;
     }
     if (a==b){
@@ -1003,7 +1003,7 @@ namespace giac {
       if (b==plus_inf){
 	vecteur singu=find_singularities(g,*x._IDNTptr,0 /* real singularities*/,contextptr);
 	if (!singu.empty()){
-	  *logptr(contextptr) << "Warning, singularities at " << singu << "\n";
+	  LOGMSG << "Warning, singularities at " << singu << "\n";
 	  if (calc_mode(contextptr)==1 || abs_calc_mode(contextptr)==38){
 	    res=undef;
 	    return true;
@@ -1291,7 +1291,7 @@ namespace giac {
 	      // complex_mode(b,contextptr);
 	      // Sucess! Now integration of gof on the unit circle using residues
 	      if (debug_infolevel)
-		*logptr(contextptr) << gettext("Searching int of ") << gof << gettext(" where ") << x << gettext(" is on the unit circle, using residues") << "\n";
+		LOGMSG << gettext("Searching int of ") << gof << gettext(" where ") << x << gettext(" is on the unit circle, using residues") << "\n";
 	      // replace x by another variable because we might have assumptions on x
 	      identificateur tmpid("_intgab38");
 	      vecteur w=singular(subst(gof,x,tmpid,false,contextptr),tmpid,contextptr);
@@ -1580,7 +1580,7 @@ namespace giac {
 	  gen tmp=r2e(p,v,contextptr)*pow(gx,x,contextptr);
 	  gen remains,tmp1=sum(tmp,x,remains,contextptr);
 	  if (!is_zero(remains) || is_undef(tmp1)){
-	    *logptr(contextptr) << gettext("Unable to sum ")+remains.print(contextptr) << "\n";
+	    LOGMSG << gettext("Unable to sum ")+remains.print(contextptr) << "\n";
 	    return false;
 	  }
 	  tmp1=-subst(tmp1,x,a,false,contextptr);
@@ -1908,7 +1908,7 @@ namespace giac {
       if (ck_is_greater(c,a_orig,contextptr) && ck_is_greater(b_orig,c,contextptr))
 	res += quotesubst(A,x,c,contextptr);
       else
-	*logptr(contextptr) << gettext("Warning, Dirac function outside summation interval") << "\n";
+	LOGMSG << gettext("Warning, Dirac function outside summation interval") << "\n";
       return true;
     }
     // detect Heaviside 

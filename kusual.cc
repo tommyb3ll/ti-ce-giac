@@ -402,7 +402,7 @@ namespace giac {
       }
       else {
 	if (!escape_real(contextptr) && !complex_mode(contextptr))
-	  *logptr(contextptr) << "Taking ln of negative real " << e << endl;
+	  LOGMSG << "Taking ln of negative real " << e << endl;
 #ifdef _SOFTMATH_H
 	return M_PI*cst_i+std::giac_gnuwince_log(-e._DOUBLE_val);
 #else
@@ -421,7 +421,7 @@ namespace giac {
 	return e._REALptr->log();
       else {
 	if (!escape_real(contextptr) && !complex_mode(contextptr))
-	  *logptr(contextptr) << "Taking ln of negative real " << e << endl;
+	  LOGMSG << "Taking ln of negative real " << e << endl;
 	return gen((-e)._REALptr->log(),cst_pi);//(-e)._REALptr->log()+cst_pi*cst_i;
       }
     }
@@ -642,6 +642,13 @@ double my_atan(double arg) {
 }
 
   
+#ifdef TICE
+  // 32-bit floats: the polynomials of the exact values below are ~1e-4 off at their roots
+  // (atan(1/sqrt(3)) stayed as is, not pi/6); normal() then checks exactly
+#define TRIG_EPS(e) 1e-3
+#else
+#define TRIG_EPS(e) e
+#endif
   gen atan(const gen & e0,GIAC_CONTEXT){
 #if 0
     if (e0.type==_FLOAT_){
@@ -761,7 +768,7 @@ double my_atan(double arg) {
       double ed=tmp._DOUBLE_val;
       // detect if atan is a multiples of pi/10
       gen edh=horner(makevecteur(-5,60,-126,60,-5),tmp*tmp);
-      if (absdouble(edh._DOUBLE_val)<1e-7 &&
+      if (absdouble(edh._DOUBLE_val)<TRIG_EPS(1e-7) &&
 	  normal(horner(makevecteur(-5,60,-126,60,-5),e*e),contextptr)==0){
 	int res=int(std::floor(std::atan(absdouble(ed))*10/M_PI+.5));
 	if (res%2)
@@ -770,7 +777,8 @@ double my_atan(double arg) {
 	  return (ed>0?res/2:-res/2)*(angle_radian(contextptr)?cst_pi/5:(angle_degree(contextptr)?gen(36):gen(40))); //grad
       }
       edh=horner(makevecteur(-3,55,-198,198,-55,3),tmp*tmp);
-      if (absdouble(edh._DOUBLE_val)<1e-7){      
+      if (absdouble(edh._DOUBLE_val)<TRIG_EPS(1e-7) &&
+	  normal(horner(makevecteur(-3,55,-198,198,-55,3),e*e),contextptr)==0){      
 	int res=int(std::floor(std::atan(absdouble(ed))*12/M_PI+.5));
 	int den=12;
 	int g=gcd(res,den);
@@ -778,7 +786,7 @@ double my_atan(double arg) {
 	return (ed>0?res:-res)*(angle_radian(contextptr)?cst_pi/den:(angle_degree(contextptr)?gen(15*g):rdiv(50,3)*gen(g))); //grad   50/3*g grads
       }
       edh=horner(makevecteur(1,-6,1),ed*ed);
-      if (absdouble(edh._DOUBLE_val)<1e-7 &&
+      if (absdouble(edh._DOUBLE_val)<TRIG_EPS(1e-7) &&
 	  normal(horner(makevecteur(1,-6,1),e*e),contextptr)==0){
 	int res=int(std::floor(std::atan(absdouble(ed))*8/M_PI+.5));
 	return (ed>0?res:-res)*(angle_radian(contextptr)?cst_pi/8:(angle_degree(contextptr)?gen(45)/2:gen(25))); //grad 
@@ -1108,7 +1116,7 @@ double my_atan(double arg) {
 #ifdef NO_STDEXCEPT
       u=ifactors(e_copy,contextptr);
       if (is_undef(u)){
-	*logptr(contextptr) << gettext("Unable to factor ") << e << endl;
+	LOGMSG << gettext("Unable to factor ") << e << endl;
 	simpl=e;
 	pos=true;
 	return;
@@ -1118,7 +1126,7 @@ double my_atan(double arg) {
 	u=ifactors(e_copy,contextptr);
       } catch (std::runtime_error & err){
 	last_evaled_argptr(contextptr)=NULL;
-	*logptr(contextptr) << gettext("Unable to factor ") << e << endl;
+	LOGMSG << gettext("Unable to factor ") << e << endl;
 	simpl=e;
 	pos=true;
 	return;      
@@ -1368,7 +1376,7 @@ double my_atan(double arg) {
 	rho=evalf(rho,1,contextptr);
 	if (rho.type>=_IDNT)
 	  return pow(e,plus_one_half,contextptr);
-	*logptr(contextptr) << "Warning converting to approx sqrt"<<endl;
+	LOGMSG << "Warning converting to approx sqrt"<<endl;
       }
 #ifdef EMCC
       if (rho.type>=_IDNT)
@@ -2422,7 +2430,7 @@ double my_tan(double arg){
       double ed=edg._DOUBLE_val;
       // detect if asin is a multiples of pi/10
       gen edh=horner(makevecteur(256,-512,336,-80,5),edg*edg);
-      if (absdouble(edh._DOUBLE_val)<1e-9 &&
+      if (absdouble(edh._DOUBLE_val)<TRIG_EPS(1e-9) &&
 	  normal(horner(makevecteur(256,-512,336,-80,5),e*e),contextptr)==0){
 	int res=int(std::floor(std::asin(absdouble(ed))*10/M_PI+.5));
 	if (res%2)
@@ -2431,7 +2439,7 @@ double my_tan(double arg){
 	  return (ed>0?res/2:-res/2)*(angle_radian(contextptr)?cst_pi/5:(angle_degree(contextptr)?gen(36):gen(40))); //grad
       }
       edh=horner(makevecteur(512,-1280,1152,-448,70,-3),edg*edg);
-      if (absdouble(edh._DOUBLE_val)<1e-9 &&
+      if (absdouble(edh._DOUBLE_val)<TRIG_EPS(1e-9) &&
 	  normal(horner(makevecteur(512,-1280,1152,-448,70,-3),e*e),contextptr)==0){
 	int res=int(std::floor(std::asin(absdouble(ed))*12/M_PI+.5));
 	int den=12;
@@ -2440,7 +2448,7 @@ double my_tan(double arg){
 	return (ed>0?res:-res)*(angle_radian(contextptr)?cst_pi/den:(angle_degree(contextptr)?gen(15*g):rdiv(50,3)*gen(g))); //grad   50/3*g grads
       }
       edh=horner(makevecteur(64,-128,80,-16,1),edg*edg);
-      if (absdouble(edh._DOUBLE_val)<1e-9 &&
+      if (absdouble(edh._DOUBLE_val)<TRIG_EPS(1e-9) &&
 	  normal(horner(makevecteur(64,-128,80,-16,1),e*e),contextptr)==0){
 	int res=int(std::floor(std::asin(absdouble(ed))*8/M_PI+.5));
 	int den=8;
@@ -3095,7 +3103,7 @@ double my_tan(double arg){
       gen expo=arg._SPOL1ptr->front().exponent;
       char sv=series_variable_name(contextptr);
       if (expo!=1)
-	*logptr(contextptr) << "order_size argument should always be the series variable name. This means that O("<<sv<<"^"<<expo << ") should be written "<< sv << "^" << expo <<"*order_size("<< sv << ")" << endl;
+	LOGMSG << "order_size argument should always be the series variable name. This means that O("<<sv<<"^"<<expo << ") should be written "<< sv << "^" << expo <<"*order_size("<< sv << ")" << endl;
       return sparse_poly1(1,monome(undef,0));
     }
     return symb_order_size(arg);
@@ -3581,7 +3589,7 @@ double my_tan(double arg){
 	    if (a.type==_DOUBLE_ && a._DOUBLE_val<=RAND_MAX && a._DOUBLE_val>=-RAND_MAX){
 	      int i=int(a._DOUBLE_val);
 	      if (i!=a._DOUBLE_val)
-		*logptr(contextptr) << gettext("Converting ") << a._DOUBLE_val << gettext(" to integer ") << i << endl;
+		LOGMSG << gettext("Converting ") << a._DOUBLE_val << gettext(" to integer ") << i << endl;
 	      return sto(i,b,in_place,contextptr);
 	    }
 	    if (a.type!=_INT_){
@@ -5224,7 +5232,7 @@ double my_tan(double arg){
     vecteur lv(1,var);
     lvar(v,lv);
     if (lv.size()!=1)
-      *logptr(contextptr) << gettext("Too many variables ")+gen(lv).print(contextptr) << endl;
+      LOGMSG << gettext("Too many variables ")+gen(lv).print(contextptr) << endl;
     gen aa=e2r(a,lv,contextptr),aan,aad,bb=e2r(p,lv,contextptr),bbn,bbd;
     fxnd(aa,aan,aad);
     if ( (aad.type==_POLY) && (aad._POLYptr->lexsorted_degree() ) )
@@ -5389,9 +5397,9 @@ double my_tan(double arg){
 
   static bool warn_implicit(const gen & a,const gen &b,GIAC_CONTEXT){
     if (contains(lidnt(b),i__IDNT_e))
-      *logptr(contextptr) << gettext("Implicit multiplication does not work with complex numbers.")<<endl;
+      LOGMSG << gettext("Implicit multiplication does not work with complex numbers.")<<endl;
     else
-      *logptr(contextptr) << gettext("Warning : using implicit multiplication for (") << a.print(contextptr) << ")(" << b.print(contextptr) << ')' << endl;
+      LOGMSG << gettext("Warning : using implicit multiplication for (") << a.print(contextptr) << ")(" << b.print(contextptr) << ')' << endl;
     return true;
   }
   gen check_symb_of(const gen& a,const gen & b0,GIAC_CONTEXT){
@@ -5513,7 +5521,7 @@ double my_tan(double arg){
       return sto(ve,v,contextptr);
     }
     if (f.type<=_POLY || f.type==_FRAC )
-      *logptr(contextptr) << "Warning, constant function " << f << " applied to " << b << endl;
+      LOGMSG << "Warning, constant function " << f << " applied to " << b << endl;
     if ( f.is_program() && qf.type==_IDNT ){
       value=f._SYMBptr->feuille;
       if (value.type!=_VECT)
@@ -5611,7 +5619,7 @@ double my_tan(double arg){
 #ifdef GIAC_HAS_STO_38
       alert(gettext("Python compatibility enabled. List index will start at 0, run index:=1 or of:=1 to disable Python compatibility."),contextptr);
 #else
-      *logptr(contextptr) << gettext("// Python compatibility enabled. List index will start at 0, run index:=1 or python_compat(0) to disable Python compatibility.") << endl;
+      LOGMSG << gettext("// Python compatibility enabled. List index will start at 0, run index:=1 or python_compat(0) to disable Python compatibility.") << endl;
 #endif
     }
     if (storcl_38){
@@ -6041,7 +6049,7 @@ double my_tan(double arg){
 	if (same_warning){
 	  string s=autosimplify(contextptr);
 	  if (unlocalize(s)!="'simplify'"){
-	    *logptr(contextptr) << gettext("Warning, the test a==b is performed by checking\nthat the internal representation of ") << s << gettext("(a-b) is not 0.\nTherefore a==b may return false even if a and b are mathematically equal,\nif they have different internal representations.\nYou can explicitly call a simplification function like simplify(a-b)==0 to avoid this.") << endl;
+	    LOGMSG << gettext("Warning, the test a==b is performed by checking\nthat the internal representation of ") << s << gettext("(a-b) is not 0.\nTherefore a==b may return false even if a and b are mathematically equal,\nif they have different internal representations.\nYou can explicitly call a simplification function like simplify(a-b)==0 to avoid this.") << endl;
 	    same_warning=false;
 	  }
 	}
@@ -6811,7 +6819,7 @@ double my_tan(double arg){
 #else
     if ( args.type==_STRNG && args.subtype==-1) return  args;
     if ( debug_infolevel && (args.type==_IDNT) && args._IDNTptr->localvalue && (!args._IDNTptr->localvalue->empty()))
-      *logptr(contextptr) << gettext("Local var protected ") << (*args._IDNTptr->localvalue)[args._IDNTptr->localvalue->size()-2].val << endl;
+      LOGMSG << gettext("Local var protected ") << (*args._IDNTptr->localvalue)[args._IDNTptr->localvalue->size()-2].val << endl;
     gen tmp=args.eval(eval_level(contextptr),contextptr);
     string nl("\n"),sep(",");
     bool nlsep=nl_sep(tmp,nl,sep);
@@ -7178,7 +7186,7 @@ double my_tan(double arg){
     if (a.type!=_INT_ || b.type!=_INT_)
       return Gamma(a+1,contextptr)/Gamma(b+1,contextptr)/Gamma(a-b+1,contextptr);
     if (a.val<0 || b.val<0){
-      *logptr(contextptr) << "comb with negative argument " << a << "," << b <<endl;
+      LOGMSG << "comb with negative argument " << a << "," << b <<endl;
       //return gensizeerr(contextptr);
     }
     return comb((unsigned long int) a.val,(unsigned long int) b.val);
@@ -8584,7 +8592,7 @@ double my_tan(double arg){
     if (is_integral(n))
       return Psi(x,n.val,contextptr);
     if (is_integral(x)){
-      *logptr(contextptr) << "Warning, please use Psi(x,n), not Psi(n,x)" << endl;
+      LOGMSG << "Warning, please use Psi(x,n), not Psi(n,x)" << endl;
       return Psi(n,x.val,contextptr);
     }
     return gensizeerr(contextptr);
@@ -8621,7 +8629,7 @@ double my_tan(double arg){
     static bool warnmod=true;
     if (f.type==_MOD){
       if (warnmod){
-	*logptr(contextptr) << "// Warning: a % b returns the class of a in Z/bZ. Use irem(a,b) for remainder" << endl;
+	LOGMSG << "// Warning: a % b returns the class of a in Z/bZ. Use irem(a,b) for remainder" << endl;
 	warnmod=false;
       }
       f=*f._MODptr;
@@ -8632,7 +8640,7 @@ double my_tan(double arg){
     }
     if (b.type==_MOD){
       if (warnmod){
-	*logptr(contextptr) << "// Warning: a % b returns the class of a in Z/bZ. Use irem(a,b) for remainder" << endl;
+	LOGMSG << "// Warning: a % b returns the class of a in Z/bZ. Use irem(a,b) for remainder" << endl;
 	warnmod=false;
       }
       b=*b._MODptr;

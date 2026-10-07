@@ -517,7 +517,7 @@ namespace giac {
     }
     if (!is_positive(p,contextptr) || !is_greater(1,p,contextptr)){
       if (calc_mode(contextptr)!=1)
-	*logptr(contextptr) << "Assuming probability=" << p << "\n"; 
+	LOGMSG << "Assuming probability=" << p << "\n"; 
     }
     return comb(n,k,contextptr)*pow(p,k,contextptr)*pow(1-p,n-k,contextptr);
   }
@@ -674,7 +674,7 @@ namespace giac {
 	return 1;
       long_double cumul=std::pow(p,r),current=cumul;
       if (cumul==0){
-	*logptr(contextptr) << gettext("Underflow") <<"\n";
+	LOGMSG << gettext("Underflow") <<"\n";
 	return undef;
       }
       // negbinomial(r,p,k+1)/negbinomial(r,p,k)))=(1-p)*(k+r)/(k+1)
@@ -1357,7 +1357,7 @@ namespace giac {
     if (!is_undef(res))
       return res;
     // for example student_icdf(100,0.95)
-    *logptr(contextptr) << "Low accuracy" << "\n";
+    LOGMSG << "Low accuracy" << "\n";
     return x0;
   }
   gen _student_icdf(const gen & g,GIAC_CONTEXT){
@@ -1941,11 +1941,11 @@ namespace giac {
       return gensizeerr(contextptr); // symbolic(at_betad_icdf,makesequence(alpha_orig,beta_orig,t_orig));
     double y=t._DOUBLE_val;
     if (y<=1e-13){
-      *logptr(contextptr) << "Underflow to 0" << "\n";
+      LOGMSG << "Underflow to 0" << "\n";
       return 0;
     }
     if (y>=1-1e-13){
-      *logptr(contextptr) << "Overflow to 1" << "\n";
+      LOGMSG << "Overflow to 1" << "\n";
       return 1;
     }
     // Initial guess
@@ -2040,11 +2040,11 @@ namespace giac {
       return gensizeerr(contextptr); // symbolic(at_gammad_icdf,makesequence(alpha_orig,beta_orig,t_orig));
     double y=t._DOUBLE_val;
     if (y<=1e-13){
-      *logptr(contextptr) << "Underflow" << "\n";
+      LOGMSG << "Underflow" << "\n";
       return 0;
     }
     if (y>=1-1e-13){
-      *logptr(contextptr) << "Overflow" << "\n";
+      LOGMSG << "Overflow" << "\n";
       return plus_inf;
     }
     identificateur x(" x");

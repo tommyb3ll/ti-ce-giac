@@ -563,7 +563,7 @@ namespace giac {
       return subst(e,*i._VECTptr,*newi._VECTptr,quotesubst,contextptr);
     }
     if (i.type!=_IDNT && i.type!=_SYMB && i.type!=_FUNC)
-      *logptr(contextptr) << gettext("Warning, replacing ") << i << gettext(" by ") << newi << gettext(", a substitution variable should perhaps be purged.") << "\n";
+      LOGMSG << gettext("Warning, replacing ") << i << gettext(" by ") << newi << gettext(", a substitution variable should perhaps be purged.") << "\n";
     gen res;
     if (has_subst(e,i,newi,res,quotesubst,contextptr))
       return res;
@@ -787,7 +787,7 @@ namespace giac {
   static void sort2(vecteur & i,vecteur & newi,GIAC_CONTEXT){
     for (unsigned k=0;k<i.size();++k){
       if (i[k].type!=_IDNT && i[k].type!=_SYMB && i[k].type!=_FUNC && !is_zero(i[k]-newi[k]))
-	*logptr(contextptr) << gettext("Warning, replacing ") << i[k] << gettext(" by ") << newi[k] << gettext(", a substitution variable should perhaps be purged.") << "\n";
+	LOGMSG << gettext("Warning, replacing ") << i[k] << gettext(" by ") << newi[k] << gettext(", a substitution variable should perhaps be purged.") << "\n";
     }
     int is=int(i.size());
     if (is<2)
@@ -1556,7 +1556,7 @@ namespace giac {
 	  else
 	    point=ratnormal((l+m)/2,contextptr);
 	  if (!is_inf(point) && !is_undef(point)){
-	    *logptr(contextptr) << gettext("Simplification assuming ") << v[i] << " near " << point << "\n";
+	    LOGMSG << gettext("Simplification assuming ") << v[i] << " near " << point << "\n";
 	    point=subst(gg,*v[i]._IDNTptr,point,false,contextptr);
 	    if (!is_inf(point) && !is_undef(point)){
 	      return evalf(point,1,contextptr);
@@ -1574,7 +1574,7 @@ namespace giac {
 	}
       }
       if (!is_inf(point) && !is_undef(point))
-	*logptr(contextptr) << gettext("Simplification assuming ") << v[i] << " near " << point << (direction==1?"+":"-") << "\n";
+	LOGMSG << gettext("Simplification assuming ") << v[i] << " near " << point << (direction==1?"+":"-") << "\n";
 #ifdef NO_STDEXCEPT
       gg=limit(gg,*v[i]._IDNTptr,point,direction,contextptr);
 #ifdef COMPILE_FOR_STABILITY
@@ -2494,7 +2494,7 @@ namespace giac {
       }
     }
     if (!vabs.empty() && debug_infolevel)
-      *logptr(contextptr) << gettext("simplify preserving ") << vabs << "\n";
+      LOGMSG << gettext("simplify preserving ") << vabs << "\n";
     int s=int(vabs.size());
     vabs2=vecteur(s);
     for (int i=0;i<s;++i){

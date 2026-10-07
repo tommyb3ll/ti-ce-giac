@@ -2385,7 +2385,7 @@ namespace giac {
     //dbg_printf("in_eval %s\n",print(contextptr).c_str());
     if (ctrl_c || interrupted) { 
       interrupted = true; ctrl_c=false;
-      *logptr(contextptr) << "Stopped in in_eval" << endl;
+      LOGMSG << "Stopped in in_eval" << endl;
       gensizeerr(gettext("Stopped by user interruption."),evaled);
       return true;
     }    
@@ -4718,12 +4718,12 @@ namespace giac {
 	  return symb_prog3(var1,0,operator_plus(res1,res2,contextptr));
       }
       if (!is_constant_wrt(b,var1,contextptr))
-	*logptr(contextptr) << "Warning function+constant with constant dependant of mute variable" << endl;
+	LOGMSG << "Warning function+constant with constant dependant of mute variable" << endl;
       return symb_prog3(var1,0,operator_plus(res1,b,contextptr));
     }
     if (is_algebraic_program(b,var2,res2)){
       if (!is_constant_wrt(a,var2,contextptr))
-	*logptr(contextptr) << "Warning constant+function with constant dependant of mute variable" << endl;
+	LOGMSG << "Warning constant+function with constant dependant of mute variable" << endl;
       return symb_prog3(var2,0,operator_plus(a,res2,contextptr));
     }
     if (a.type==_VECT){
@@ -6135,7 +6135,7 @@ namespace giac {
 	return symb_prog3(a,0,pow(base,b,contextptr));
     }
     if (base.type==_VECT && base.subtype!=_POLY1__VECT && !is_squarematrix(base)){
-      *logptr(contextptr) << gettext("Warning, ^ is ambiguous on non square matrices. Use .^ to apply ^ element by element.") << endl;
+      LOGMSG << gettext("Warning, ^ is ambiguous on non square matrices. Use .^ to apply ^ element by element.") << endl;
       if (exponent.type==_VECT)
 	return apply(base,exponent,contextptr,giac_pow);
       if (base.subtype!=_LIST__VECT && (exponent.type==_INT_ && exponent.val %2==0) )
@@ -6350,7 +6350,7 @@ namespace giac {
 	if ((exponent.type==_DOUBLE_ ))
 	  return matpow(*base._VECTptr,exponent,contextptr);
 	if (exponent.type>=_IDNT)
-	  *logptr(contextptr) << gettext("Use matpow to force computation of a power of matrix via jordanisation") << endl;
+	  LOGMSG << gettext("Use matpow to force computation of a power of matrix via jordanisation") << endl;
       }
       if (base.type==_DOUBLE_ || 
 	  (base.type==_CPLX 
@@ -6528,12 +6528,12 @@ namespace giac {
 	  return symb_prog3(var1,0,operator_times(res1,res2,contextptr));
       }
       if (!is_constant_wrt(b,var1,contextptr))
-	*logptr(contextptr) << "Warning function*constant with constant dependant of mute variable" << endl;
+	LOGMSG << "Warning function*constant with constant dependant of mute variable" << endl;
       return symb_prog3(var1,0,operator_times(res1,b,contextptr));
     }
     if (is_algebraic_program(b,var2,res2)){
       if (!is_constant_wrt(a,var2,contextptr))
-	*logptr(contextptr) << "Warning constant*function with constant dependant of mute variable" << endl;
+	LOGMSG << "Warning constant*function with constant dependant of mute variable" << endl;
       return symb_prog3(var2,0,operator_times(a,res2,contextptr));
     }
     if (is_inf(a)){
@@ -7248,7 +7248,7 @@ namespace giac {
       if (a.subtype==_POLY1__VECT || b.subtype==_POLY1__VECT)
 	return fraction(a,b).normal();
       if (is_squarematrix(b)){
-	*logptr(contextptr) << gettext("Warning, pointwise division of a by b. For matrix division, please use inv(b)*a or a*inv(b)") << endl;
+	LOGMSG << gettext("Warning, pointwise division of a by b. For matrix division, please use inv(b)*a or a*inv(b)") << endl;
       }
       if (b._VECTptr->size()==1)
 	return rdiv(a,b._VECTptr->front(),contextptr);
@@ -7311,12 +7311,12 @@ namespace giac {
 	      return symb_prog3(var1,0,rdiv(res1,res2,contextptr));
 	  }
 	  if (!is_constant_wrt(b,var1,contextptr))
-	    *logptr(contextptr) << "Warning function/constant with constant dependant of mute variable" << endl;
+	    LOGMSG << "Warning function/constant with constant dependant of mute variable" << endl;
 	  return symb_prog3(var1,0,rdiv(res1,b,contextptr));
 	}
 	if (is_algebraic_program(b,var2,res2)){
 	  if (!is_constant_wrt(a,var2,contextptr))
-	    *logptr(contextptr) << "Warning constant/function with constant dependant of mute variable" << endl;
+	    LOGMSG << "Warning constant/function with constant dependant of mute variable" << endl;
 	  return symb_prog3(var2,0,rdiv(a,res2,contextptr));	
 	}
       }
@@ -8058,7 +8058,7 @@ namespace giac {
       return undef;
     double eps=epsilon(contextptr);
     if (eps>1e-4)
-      *logptr(contextptr) << gettext("Warning, sign might return 0 incorrectly because the value of eps is too large ") << eps << endl;
+      LOGMSG << gettext("Warning, sign might return 0 incorrectly because the value of eps is too large ") << eps << endl;
     switch (a.type){
     case _INT_: case _ZINT: 
       if (is_positive(a,contextptr))
@@ -8529,7 +8529,7 @@ namespace giac {
 	  if (step<0 && is_zero(i1))
 	    i1=minus_one;
 	  if (0 && step<0 && is_zero(iback)){ // detected during translation
-	    *logptr(contextptr) << gettext("Warning, using :0:-step, use :-1:-step for ::") << endl;
+	    LOGMSG << gettext("Warning, using :0:-step, use :-1:-step for ::") << endl;
 	  }
 	}
 	gen i2=_floor(iback,contextptr);
@@ -8609,7 +8609,7 @@ namespace giac {
 	    if (step<0 && is_zero(i1))
 	      i1=minus_one;
 	    if (step<0 && is_zero(iback)){
-	      *logptr(contextptr) << gettext("Warning, using :0:-step, use :-1:-step for ::") << endl;
+	      LOGMSG << gettext("Warning, using :0:-step, use :-1:-step for ::") << endl;
 	    }
 	  }	  
 	  if (i1.type==_INT_ && iback.type==_INT_){
@@ -8728,7 +8728,7 @@ namespace giac {
 	  if (s.type!=_VECT || s._VECTptr->size()<1 || is_undef(s._VECTptr->front()))
 	    return gensizeerr("Unable to invert function");
 	  if (s._VECTptr->size()>1)
-	    *logptr(contextptr) << "Choosing first solution in "<<s<<endl;
+	    LOGMSG << "Choosing first solution in "<<s<<endl;
 	  f=symb_program(y,0,s._VECTptr->front(),contextptr);
 	  n=-n;
 	  tmp=makesequence(f,n);
@@ -8777,7 +8777,7 @@ namespace giac {
       if (lid.size()==1 && !has_algebraic_program(*this)){
 	if (lid.front()==vx_var()|| lid.front()==t__IDNT_e)
 	// suspect something like P:=x^3+1 then P(2)
-	  *logptr(contextptr) << "Warning, evaluating univariate expression of x(value) like if expression was a function.\nYou should write subst(" << *this << "," << lid.front() << "," << i << ")" << endl;
+	  LOGMSG << "Warning, evaluating univariate expression of x(value) like if expression was a function.\nYou should write subst(" << *this << "," << lid.front() << "," << i << ")" << endl;
 	else
 	  return gensizeerr("Expression used like a function "+this->print(contextptr)+"\nYou should write subst("+this->print(contextptr)+","+lid.front().print(contextptr)+","+i.print(contextptr)+")");
 	return subst(*this,lid.front(),i,false,contextptr);
@@ -8791,7 +8791,7 @@ namespace giac {
 	*it=(*it)(i,contextptr);
       }
       if (warn)
-	*logptr(contextptr) << gettext("Warning, evaluating (") << *this << ")(" << i << ") as a function not as a product" << endl;
+	LOGMSG << gettext("Warning, evaluating (") << *this << ")(" << i << ") as a function not as a product" << endl;
       return _SYMBptr->sommet(res,contextptr);
     }
     if (type==_FUNC){
@@ -11271,7 +11271,7 @@ namespace giac {
 	      if (args.type!=_VECT || args._VECTptr->empty())
 		continue;
 	      if (contains(args._VECTptr->front(),i__IDNT_e)){
-		*logptr(contextptr) << gettext("Warning, i is usually sqrt(-1), I'm using a symbolic variable instead but you should check your input") << endl;
+		LOGMSG << gettext("Warning, i is usually sqrt(-1), I'm using a symbolic variable instead but you should check your input") << endl;
 		return res;
 	      }
 	    }
@@ -11282,7 +11282,7 @@ namespace giac {
 	      if (args.type!=_VECT || args._VECTptr->empty())
 		continue;
 	      if (contains(args._VECTptr->front(),i__IDNT_e)){
-		*logptr(contextptr) << gettext("Warning, i is usually sqrt(-1), I'm using a symbolic variable instead but you should check your input") << endl;
+		LOGMSG << gettext("Warning, i is usually sqrt(-1), I'm using a symbolic variable instead but you should check your input") << endl;
 		return res;
 	      }
 	    }
@@ -11290,7 +11290,7 @@ namespace giac {
 	    vs=int(v.size());
 	    for (i=0;i<vs;i++){
 	      if (v[i]._SYMBptr->feuille[1]==i__IDNT_e){
-		*logptr(contextptr) << gettext("Warning, i is usually sqrt(-1), I'm using a symbolic variable instead but you should check your input") << endl;
+		LOGMSG << gettext("Warning, i is usually sqrt(-1), I'm using a symbolic variable instead but you should check your input") << endl;
 		break;
 	      }
 	    }

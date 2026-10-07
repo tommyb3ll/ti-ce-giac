@@ -222,7 +222,7 @@ namespace giac {
 	continue;
       }
       if (is_strictly_positive(expa,contextptr))
-	*logptr(contextptr) << gettext("Warning, exponential x coeff is positive ") << expa << "\n";
+	LOGMSG << gettext("Warning, exponential x coeff is positive ") << expa << "\n";
       vecteur varx(lvarx(coeff,x));
       int varxs=int(varx.size());
       if (!varxs){ // Dirac function
@@ -505,7 +505,7 @@ namespace giac {
       return res;
     }
     if (solution_generale.type==_VECT)
-      *logptr(contextptr) << gettext("Boundary conditions for parametric curve not implemented") << "\n";
+      LOGMSG << gettext("Boundary conditions for parametric curve not implemented") << "\n";
     // solve boundary conditions
     iterateur jt=v.begin()+1,jtend=v.end();
     for (unsigned ndiff=0;jt!=jtend;++ndiff,++jt){
@@ -981,7 +981,7 @@ namespace giac {
 		vecteur v=*sol._VECTptr;
 		vreverse(v.begin(),v.end());
 		sol=symb_horner(-v,x);
-		*logptr(contextptr) << "Polynomial solution found " << sol << "\n";
+		LOGMSG << "Polynomial solution found " << sol << "\n";
 		// now solve equation a*y''+b*y'+c*y+d=0 with y=sol*z
 		// a*sol*z''+(2*a*sol'+b*sol)*z'=d
 		gen res=desolve_lin1(a0*sol,2*a0*derive(sol,x,contextptr)+b0*sol,d,x,parameters,step_info,contextptr);
@@ -1166,7 +1166,7 @@ namespace giac {
 	  vecteur newsol=solve(res-x,*t._IDNTptr,3,contextptr);
 	  if (is_undef(newsol)){
 	    newsol.clear();
-	    *logptr(contextptr) << "Unable to solve implicit equation "<< res-x << "=0 in " << t << "\n";
+	    LOGMSG << "Unable to solve implicit equation "<< res-x << "=0 in " << t << "\n";
 	  }
 #else
 	  vecteur newsol;
@@ -1175,7 +1175,7 @@ namespace giac {
 	  } catch(std::runtime_error & err){
 	    last_evaled_argptr(contextptr)=NULL;
 	    newsol.clear();
-	    *logptr(contextptr) << "Unable to solve implicit equation "<< res-x << "=0 in " << t << "\n";
+	    LOGMSG << "Unable to solve implicit equation "<< res-x << "=0 in " << t << "\n";
 	  }
 #endif
 	  if (newsol.empty())
@@ -1218,7 +1218,7 @@ namespace giac {
 	  vecteur newsol=solve(implicitsol,*y._IDNTptr,3,contextptr);
 	  if (is_undef(newsol)){
 	    newsol.clear();
-	    *logptr(contextptr) << "Unable to solve implicit equation "<< implicitsol << "=0 in " << y << "\n";
+	    LOGMSG << "Unable to solve implicit equation "<< implicitsol << "=0 in " << y << "\n";
 	  }
 #else
 	  vecteur newsol;
@@ -1229,7 +1229,7 @@ namespace giac {
 	  } catch(std::runtime_error & err){
 	    last_evaled_argptr(contextptr)=NULL;
 	    newsol.clear();
-	    *logptr(contextptr) << "Unable to solve implicit equation "<< implicitsol << "=0 in " << y << "\n";
+	    LOGMSG << "Unable to solve implicit equation "<< implicitsol << "=0 in " << y << "\n";
 	  }
 	  calc_mode(cm,contextptr);
 #endif
@@ -1238,7 +1238,7 @@ namespace giac {
 	} // end separate variables
 	if (is_zero(derive(*it,x,contextptr))){ // x incomplete
 	  if (debug_infolevel)
-	    *logptr(contextptr) << gettext("Incomplete") << "\n";
+	    LOGMSG << gettext("Incomplete") << "\n";
 	  gen pr=integrate_without_lnabs(inv(*it,contextptr),y,contextptr)+parameters.back();
 	  sol=mergevecteur(sol,solve(pr-x,*y._IDNTptr,3,contextptr));
 	  continue;
@@ -1269,7 +1269,7 @@ namespace giac {
 	purgenoassume(tplus,contextptr);
 	if (is_zero(f)){
 	  if (debug_infolevel)
-	    *logptr(contextptr) << gettext("Homogeneous differential equation") << "\n";
+	    LOGMSG << gettext("Homogeneous differential equation") << "\n";
 	  tmpsto=sto(doubleassume_and(vecteur(2,0),0,1,false,contextptr),x,contextptr);
 	  if (is_undef(tmpsto))
 	    return tmpsto;
@@ -1284,7 +1284,7 @@ namespace giac {
 	  // Try to find t in x=pr
 	  vecteur v=protect_solve(x-pr,*t._IDNTptr,1,contextptr);
 	  if (!v.empty() && !is_undef(v)){
-	    *logptr(contextptr) << "solve(" << pr << "=" << x << "," << t << ") returned " << v << ".\nIf solutions were missed consider paramplot(" << makevecteur(pr,t*pr) << "," << t << ")" << "\n";
+	    LOGMSG << "solve(" << pr << "=" << x << "," << t << ") returned " << v << ".\nIf solutions were missed consider paramplot(" << makevecteur(pr,t*pr) << "," << t << ")" << "\n";
 	    for (unsigned j=0;j<v.size();++j){
 	      sol.push_back(x*v[j]);
 	    }
@@ -1635,7 +1635,7 @@ namespace giac {
       polynome ipnum(dim),ipden(dim);
       partfrac(num,den,vden,pfde_VECT,ipnum,ipden);
       if (!is_zero(ipnum))
-	*logptr(contextptr) << gettext("Warning, z*argument has a non-zero integral part") << "\n";
+	LOGMSG << gettext("Warning, z*argument has a non-zero integral part") << "\n";
       vector< pf<gen> >::iterator it=pfde_VECT.begin();
       vector< pf<gen> >::const_iterator itend=pfde_VECT.end();
       gen a,A,B;

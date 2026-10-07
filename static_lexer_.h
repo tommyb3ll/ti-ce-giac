@@ -326,7 +326,7 @@ at_getKey,
 at_get_pixel,
 at_getKey,
 at_goto,
-//at_grad,
+at_diff, // grad(f,[x,y]) is diff(f,[x,y]) (_grad: 1.2 KB, its coordinates option)
 //at_gramschmidt,
 //at_greduce,
 at_hadamard,

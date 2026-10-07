@@ -1105,7 +1105,7 @@ namespace giac {
 	  if (tmpv.type==_FRAC){
 	    if (tmpv._FRACptr->den.type==_VECT){
 	      if (tmpv._FRACptr->den._VECTptr->size()!=1){
-		*logptr(contextptr) << "Internal error integrating sqrt" << "\n";
+		LOGMSG << "Internal error integrating sqrt" << "\n";
 		return false;
 	      }
 	      tmpv._FRACptr->den=tmpv._FRACptr->den._VECTptr->front();
@@ -2155,7 +2155,7 @@ namespace giac {
       l3.push_back(tmpi);
       l4.push_back(*it);
     }      
-    *logptr(contextptr) << gettext("! Integration of abs or sign assumes constant sign by intervals:\nCheck ") << l1 << "\n";
+    LOGMSG << gettext("! Integration of abs or sign assumes constant sign by intervals:\nCheck ") << l1 << "\n";
     e=complex_subst(e,l1,l2,contextptr);
     res=integrate_id_rem(e,gen_x,remains_to_integrate,contextptr,intmode);
     gen resadd;
@@ -2186,12 +2186,12 @@ namespace giac {
 #endif
 	  gen tmp=ratnormal((limit(liminf,id_x,r,-1,contextptr)-limit(limsup,id_x,r,1,contextptr))/2,contextptr)*val;
 	  if (is_undef(tmp) || is_inf(tmp))
-	    *logptr(contextptr) << gettext("Unable to cancel step at ")+r.print(contextptr) + " of " << limsup << "-" << liminf << "\n";
+	    LOGMSG << gettext("Unable to cancel step at ")+r.print(contextptr) + " of " << limsup << "-" << liminf << "\n";
 	  else
 	    resadd += tmp;
 	}
 	if (warn)
-	  *logptr(contextptr) << gettext("Discontinuities at zeroes of ") << val._SYMBptr->feuille << " were not checked" << "\n";
+	  LOGMSG << gettext("Discontinuities at zeroes of ") << val._SYMBptr->feuille << " were not checked" << "\n";
       }
     }
     remains_to_integrate=complex_subst(remains_to_integrate,l3,l4,contextptr);
@@ -2301,7 +2301,7 @@ namespace giac {
     subst1=mergevecteur(l1surd,l1NTHROOT);
     subst2=mergevecteur(l2surd,l2NTHROOT);
     if (!subst1.empty())
-      *logptr(contextptr) << gettext("Temporary replacing surd/NTHROOT by fractional powers") << "\n";
+      LOGMSG << gettext("Temporary replacing surd/NTHROOT by fractional powers") << "\n";
   }
 
   bool is_elementary(const vecteur & v,const gen & x){
@@ -2318,7 +2318,7 @@ namespace giac {
   // intmode bit 0 is used for sqrt int control, bit 1 control step/step info
   gen integrate_id_rem(const gen & e_orig,const gen & gen_x,gen & remains_to_integrate,GIAC_CONTEXT,int intmode){
 #ifdef LOGINT
-    *logptr(contextptr) << gettext("integrate id_rem ") << e_orig << "\n";
+    LOGMSG << gettext("integrate id_rem ") << e_orig << "\n";
 #endif
     remains_to_integrate=0;
     gen e(e_orig);
@@ -2343,13 +2343,13 @@ namespace giac {
     vecteur lpiece(lop(e,at_piecewise));
     if (!lpiece.empty()) lpiece=lvarx(lpiece,gen_x);
     if (!lpiece.empty()){
-      *logptr(contextptr) << gettext("! piecewise indefinite integration does not return a continuous antiderivative") << "\n";
+      LOGMSG << gettext("! piecewise indefinite integration does not return a continuous antiderivative") << "\n";
       gen piece=lpiece.front();
       if (piece.is_symb_of_sommet(at_piecewise))
 	return integrate_piecewise(e,piece,gen_x,remains_to_integrate,contextptr,intmode);
     }
 #ifdef LOGINT
-    *logptr(contextptr) << gettext("integrate step -2 ") << e << "\n";
+    LOGMSG << gettext("integrate step -2 ") << e << "\n";
 #endif
     //dbg_printf("integrate step -2 %s\n",e.print().c_str());
     // Step -1: replace ifte(a,b,c) by b+sign(a==0)*(c-b)
@@ -2381,7 +2381,7 @@ namespace giac {
       e=complex_subst(e,lwhen,l2,contextptr);      
     }
 #ifdef LOGINT
-    *logptr(contextptr) << gettext("integrate step 0 ") << e << "\n";
+    LOGMSG << gettext("integrate step 0 ") << e << "\n";
 #endif
     //dbg_printf("integrate step 0 %s\n",e.print().c_str());
     // Step 0: replace abs(var_dep_x) with sign*var_dep_x
@@ -2428,7 +2428,7 @@ namespace giac {
     }
 #endif
 #ifdef LOGINT
-    *logptr(contextptr) << gettext("integrate step 1 ") << e << "\n";
+    LOGMSG << gettext("integrate step 1 ") << e << "\n";
 #endif
     //dbg_printf("integrate step 1 %s\n",e.print().c_str());
     if (u==at_sum && f.type==_VECT && f._VECTptr->size()==4){
@@ -2438,7 +2438,7 @@ namespace giac {
       if (!is_zero(derive(fv[2],gen_x,contextptr)) || !is_zero(derive(fv[3],gen_x,contextptr)) )
 	return gensizeerr("Boundaries of sum depends on integration variables");
       if (is_inf(fv[2])||is_inf(fv[3]))
-	*logptr(contextptr) << "! assuming integration and sum commutes" << "\n";
+	LOGMSG << "! assuming integration and sum commutes" << "\n";
       gen res=integrate_id_rem(fv[0],gen_x,remains_to_integrate,contextptr,intmode);
       res=_sum(makesequence(res,fv[1],fv[2],fv[3]),contextptr);
       if (!is_zero(remains_to_integrate))
@@ -2593,7 +2593,7 @@ namespace giac {
       }
     }
 #ifdef LOGINT
-    *logptr(contextptr) << gettext("integrate step 2 ") << e << "\n";
+    LOGMSG << gettext("integrate step 2 ") << e << "\n";
 #endif
     //dbg_printf("integrate step 2 %s\n",e.print().c_str());
     if (e.type!=_SYMB){
@@ -2682,7 +2682,7 @@ namespace giac {
       }
     }
 #ifdef LOGINT
-    *logptr(contextptr) << gettext("integrate step 3 ") << e << "\n";
+    LOGMSG << gettext("integrate step 3 ") << e << "\n";
 #endif
     //dbg_printf("integrate step 3 %s\n",e.print().c_str());
     // Step3: rational fraction?
@@ -3017,17 +3017,31 @@ namespace giac {
     if (tmp.type!=_DOUBLE_ && tmp.type!=_CPLX)
       return exactvalue;
     if (debug_infolevel)
-      *logptr(contextptr) << gettext("Checking exact value of integral with numeric approximation")<<"\n";
+      LOGMSG << gettext("Checking exact value of integral with numeric approximation")<<"\n";
     gen tmp2;
     if (!tegral(f,x,a,b,1e-6,(1<<10),tmp2,true,contextptr))
       return exactvalue;
     tmp2=evalf_double(tmp2,1,contextptr);
-    if ( (tmp2.type!=_DOUBLE_ && tmp2.type!=_CPLX) || 
-	 (abs(tmp,contextptr)._DOUBLE_val<1e-8 && abs(tmp2,contextptr)._DOUBLE_val<1e-8) || 
-	 abs(tmp-tmp2,contextptr)._DOUBLE_val<=1e-3*abs(tmp2,contextptr)._DOUBLE_val
+    double tol=0;
+#ifdef TICE
+    // 32-bit floats: tmp2 is good to ~1e-6 of the size of f on [a,b] (the integral of x^3-2x
+    // from 0 to 2, 0, was [0,-6.3e-7]: "returning both"); f at 4 points inside (cos(99x)sin(101x)
+    // is 0 at 0, pi/2, pi)
+    static const double at[]={0.1123,0.3678,0.618,0.8862};
+    for (int k=0;k<4;++k){
+      const gen y=evalf_double(subst(f,x,a+at[k]*(b-a),false,contextptr),1,contextptr);
+      if (y.type==_DOUBLE_ && y._DOUBLE_val==y._DOUBLE_val && std::abs(y._DOUBLE_val)<1e30)
+	tol+=std::abs(y._DOUBLE_val);
+    }
+    const gen ba=evalf_double(b-a,1,contextptr);
+    tol*=ba.type==_DOUBLE_?1e-5*std::abs(ba._DOUBLE_val):0;
+#endif
+    if ( (tmp2.type!=_DOUBLE_ && tmp2.type!=_CPLX) ||
+	 (abs(tmp,contextptr)._DOUBLE_val<1e-8 && abs(tmp2,contextptr)._DOUBLE_val<1e-8) ||
+	 abs(tmp-tmp2,contextptr)._DOUBLE_val<=1e-3*abs(tmp2,contextptr)._DOUBLE_val+tol
 	 )
       return simplifier(exactvalue,contextptr);
-    *logptr(contextptr) << gettext("Error while checking exact value with approximate value, returning both!") << "\n";
+    LOGMSG << gettext("Error while checking exact value with approximate value, returning both!") << "\n";
     return makevecteur(exactvalue,tmp2);
   }
 
@@ -3098,9 +3112,9 @@ namespace giac {
   // "unary" version
   gen _integrate(const gen & args,GIAC_CONTEXT){
     if (complex_variables(contextptr))
-      *logptr(contextptr) << gettext("! complex variables is set, this can lead to fairly complex answers.\nIt is recommended to switch off complex variables in the settings or by complex_variables:=0;\n and declare individual variables to be complex by e.g. assume(a,complex).") << "\n";
+      LOGMSG << gettext("! complex variables is set, this can lead to fairly complex answers.\nIt is recommended to switch off complex variables in the settings or by complex_variables:=0;\n and declare individual variables to be complex by e.g. assume(a,complex).") << "\n";
 #ifdef LOGINT
-    *logptr(contextptr) << gettext("integrate begin") << "\n";
+    LOGMSG << gettext("integrate begin") << "\n";
 #endif
     if ( args.type==_STRNG && args.subtype==-1) return  args;
     vecteur v(gen2vecteur(args));
@@ -3319,13 +3333,13 @@ namespace giac {
       if (!lfloor.empty()){
 	gen a,b,l,cond=lfloor.front()._SYMBptr->feuille,tmp;
 	if (lvarx(cond,x).size()>1 || !is_linear_wrt(cond,x,a,b,contextptr) ){
-	  *logptr(contextptr) << gettext("Floor definite integration: can only handle linear < or > condition") << "\n";
+	  LOGMSG << gettext("Floor definite integration: can only handle linear < or > condition") << "\n";
 	  if (!tegral(v0orig,x,aorig,borig,1e-12,(1<<10),res,true,contextptr))
 	    return undef;
 	  return res;
 	}
 	if (is_inf(borne_inf) || is_inf(borne_sup)){
-	  *logptr(contextptr) << gettext("Floor definite integration: unable to handle infinite boundaries") << "\n";
+	  LOGMSG << gettext("Floor definite integration: unable to handle infinite boundaries") << "\n";
 	}
 	else {
 	  // find integers of the form a*x+b in [borne_inf,borne_sup]
@@ -3383,11 +3397,11 @@ namespace giac {
 	  bool unable=true;
 	  gen cond=piecev[2*i];
 	  if (is_equal(cond) || cond.is_symb_of_sommet(at_same)){
-	    *logptr(contextptr) << gettext("Assuming false condition ") << cond << "\n";
+	    LOGMSG << gettext("Assuming false condition ") << cond << "\n";
 	    continue;
 	  }
 	  if (cond.is_symb_of_sommet(at_different)){
-	    *logptr(contextptr) << gettext("Assuming true condition ") << cond << "\n";
+	    LOGMSG << gettext("Assuming true condition ") << cond << "\n";
 	    v[0]=quotesubst(v[0],piece,piecev[2*i+1],contextptr);
 	    res += _integrate(makesequence(v[0],x,borne_inf,borne_sup),contextptr);
 	    return ck_int_numerically(v0orig,x,aorig,borig,(chsign?-res:res),contextptr);
@@ -3402,7 +3416,7 @@ namespace giac {
 	  }
 	  gen a,b,l;
 	  if (unable || !is_linear_wrt(cond,x,a,b,contextptr)){
-	    *logptr(contextptr) << gettext("Piecewise definite integration: can only handle linear < or > condition") << "\n";
+	    LOGMSG << gettext("Piecewise definite integration: can only handle linear < or > condition") << "\n";
 	    if (!tegral(v0orig,x,aorig,borig,1e-12,(1<<10),res,true,contextptr))
 	      return undef;
 	    return res;
@@ -3541,7 +3555,7 @@ namespace giac {
       }
     } catch (std::runtime_error & e){
       last_evaled_argptr(contextptr)=NULL;
-      *logptr(contextptr) << "Error trying to find limit of " << primitive << "\n";
+      LOGMSG << "Error trying to find limit of " << primitive << "\n";
       return symb_integrate(v[0],x,borne_inf,borne_sup);
     }
 #endif
@@ -3554,7 +3568,7 @@ namespace giac {
     vecteur sp;
     sp=lidnt(evalf(makevecteur(primitive,borne_inf,borne_sup),1,contextptr));
     if (sp.size()>1){
-      *logptr(contextptr) << gettext("No checks were made for answer. Confirm with\n  preval(")+primitive.print(contextptr)+","+borne_inf.print(contextptr)+","+borne_sup.print(contextptr)+")" << "\n" ;
+      LOGMSG << gettext("No checks were made for answer. Confirm with\n  preval(")+primitive.print(contextptr)+","+borne_inf.print(contextptr)+","+borne_sup.print(contextptr)+")" << "\n" ;
       sp.clear();
     }
     else {
@@ -3573,7 +3587,7 @@ namespace giac {
       else
 	sp=protect_find_singularities(primitive,*x._IDNTptr,0,contextptr);
       if (is_undef(sp)){
-	*logptr(contextptr) << gettext("Unable to find singular points of antiderivative") << "\n" ;
+	LOGMSG << gettext("Unable to find singular points of antiderivative") << "\n" ;
 	if (!tegral(v0orig,x,aorig,borig,1e-12,(1<<10),res,true,contextptr))
 	  return undef;
 	return res;
@@ -3584,7 +3598,7 @@ namespace giac {
     int sps=int(sp.size());
     for (int i=0;i<sps;i++){
       if (sp[i].type==_DOUBLE_ || sp[i].type==_REAL || has_op(sp[i],*at_rootof)){
-	*logptr(contextptr) << gettext("Unable to handle approx. or algebraic extension singular point\n")+sp[i].print(contextptr)+gettext(" of antiderivative");
+	LOGMSG << gettext("Unable to handle approx. or algebraic extension singular point\n")+sp[i].print(contextptr)+gettext(" of antiderivative");
 	if (!tegral(v0orig,x,aorig,borig,1e-12,(1<<10),res,true,contextptr))
 	  return undef;
 	return res;
@@ -3810,14 +3824,14 @@ namespace giac {
       if (A==C || B==C){
 	// can not subdivise anymore
 	if (is_greater(1e-4,ERR/I30ABS,contextptr)){
-	  *logptr(contextptr) << "Low accuracy, error estimate " << ERR/I30ABS << "\nError might be underestimated if initial boundary was +/-infinity" << "\n";
+	  LOGMSG << "Low accuracy, error estimate " << ERR/I30ABS << "\nError might be underestimated if initial boundary was +/-infinity" << "\n";
 	  return true;
 	}
 	return false; 
       }
       if (!tegral_util(f,x,A,C,i30,i30abs,err,contextptr)){
 	if (is_greater(1e-4,ERR/I30ABS,contextptr)){
-	  *logptr(contextptr) << "Low accuracy, error estimate " << ERR/I30ABS << "\nError might be underestimated if initial boundary was +/-infinity" << "\n";
+	  LOGMSG << "Low accuracy, error estimate " << ERR/I30ABS << "\nError might be underestimated if initial boundary was +/-infinity" << "\n";
 	  return true;
 	}
 	return false;
@@ -3825,7 +3839,7 @@ namespace giac {
       v[maxerrpos]=makevecteur(A,C,i30,i30abs,err);
       if (!tegral_util(f,x,C,B,i30,i30abs,err,contextptr)){
 	if (is_greater(1e-4,ERR/I30ABS,contextptr)){
-	  *logptr(contextptr) << "Low accuracy, error estimate " << ERR/I30ABS << "\nError might be underestimated if initial boundary was +/-infinity" << "\n";
+	  LOGMSG << "Low accuracy, error estimate " << ERR/I30ABS << "\nError might be underestimated if initial boundary was +/-infinity" << "\n";
 	  return true;
 	}
 	return false;
@@ -5203,7 +5217,7 @@ namespace giac {
       }
       else {
 	if (tmin>0 || tmax<0 || tmin>tmax || tstep<=0)
-	  *logptr(contextptr) << gettext("Warning time reversal") << "\n";
+	  LOGMSG << gettext("Warning time reversal") << "\n";
 	t0=tmin;
 	t1=tmax;
       }
@@ -5315,7 +5329,7 @@ namespace giac {
 
   void fourier_assume(const gen &n,GIAC_CONTEXT){
     if (n.type==_IDNT && eval(n,1,contextptr)==n){
-      *logptr(contextptr) << "Running assume(" << n << ",integer)" << "\n";
+      LOGMSG << "Running assume(" << n << ",integer)" << "\n";
       sto(gen(makevecteur(change_subtype(2,1)),_ASSUME__VECT),n,contextptr);
     }
   }

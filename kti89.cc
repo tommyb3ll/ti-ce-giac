@@ -494,7 +494,7 @@ namespace giac {
       // more than one arc?
       if (!v.front()._VECTptr->empty() && v.front()._VECTptr->back().is_symb_of_sommet(at_pnt)){
 	v.front()=v.front()._VECTptr->back();
-	*logptr(contextptr) << gettext("Selecting last arc") << "\n";
+	LOGMSG << gettext("Selecting last arc") << "\n";
       }
     }
     if (v.size()==3)
@@ -543,7 +543,7 @@ namespace giac {
     if (f.is_symb_of_sommet(at_pnt)){
       x0=v[1];
       if (x0.is_symb_of_sommet(at_pnt)){
-	*logptr(contextptr) << "Assuming " << x0 << " is inside " << f << "\n";
+	LOGMSG << "Assuming " << x0 << " is inside " << f << "\n";
 	// x0=projection(f,x0,contextptr);
       }
       f=remove_at_pnt(f);
@@ -622,7 +622,7 @@ namespace giac {
     if (f.is_symb_of_sommet(at_pnt)){
       x0=v[1];
       if (x0.is_symb_of_sommet(at_pnt)){
-	*logptr(contextptr) << "Assuming " << x0 << " is inside " << f << "\n";
+	LOGMSG << "Assuming " << x0 << " is inside " << f << "\n";
 	// x0=projection(f,x0,contextptr);
       }
       f=remove_at_pnt(f);

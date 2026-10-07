@@ -290,7 +290,7 @@ namespace giac {
 	if (!is_zero(derive(v1,i,contextptr)) || !is_zero(derive(v2,i,contextptr)) || ! is_zero(derive(v3,i,contextptr)) )
 	  return gensizeerr(gettext("diff of sum with boundaries or mute variable depending on differentiation variable"));
 	if (is_inf(v2) || is_inf(v3))
-	  *logptr(contextptr) << gettext("Warning, assuming derivative commutes with infinite sum") << "\n";
+	  LOGMSG << gettext("Warning, assuming derivative commutes with infinite sum") << "\n";
 	return _sum(makesequence(derive(v0,i,contextptr),v1,v2,v3),contextptr);
       }
       if ( (vs==2 || (vs==3 && is_zero(v[2]))) && (s.sommet==at_upper_incomplete_gamma || s.sommet==at_lower_incomplete_gamma || s.sommet==at_Gamma)){

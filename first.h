@@ -116,6 +116,14 @@ extern "C" void glcontext(int);
 #endif // EMCC
 #endif // NSPIRE
 #endif // FXCG
+#if defined FLOWCE && defined TICE
+// giac's notes and warnings ("No checks were made for answer", "Low accuracy, error estimate"...):
+// FlowCE's screen never shows them (main.cc: dconsole_mode), so they go nowhere: their texts and
+// calls were 17 KB of flash. What programs print (print, printf) still goes to logptr.
+#define LOGMSG CERR
+#else
+#define LOGMSG (*logptr(contextptr))
+#endif
 
 #ifdef __sparc__
 #define DOUBLEVAL
