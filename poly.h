@@ -1232,6 +1232,8 @@ namespace giac {
     T b=other.coord.front().value;
     while (a_max >= b_max){
       // errors should be trapped here and false returned if error occured
+      if (ctrl_c || interrupted) // (stopped, each coefficient becomes an error, err-err is not 0:
+        return false;            // the leading term never cancels, the loop filled memory)
       T q=rdiv(rem.coord.front().value,b);
       if (!allowrational){
 	if ( has_denominator(q) || 
@@ -1758,7 +1760,7 @@ namespace giac {
     return (pow(qtmp,m)/pow(h,m-1))*(res*T(sign));
   }
 
-  // Bézout identity
+  // Bï¿½zout identity
   // given p and q, find u and v s.t. u*p+v*q=d where d=gcd(p,q) using PSR algo
   // Iterative algorithm to find u and d, then q=(d-u*p)/v
   template<class T>
@@ -1962,7 +1964,7 @@ namespace giac {
     }
   }
 
-  // utility for Bézout identity solving
+  // utility for Bï¿½zout identity solving
   template<class T>
   void Tegcdtoabcuv(const tensor<T> & a,const tensor<T> &b, const tensor<T> &c, tensor<T> &u,tensor<T> &v, tensor<T> & d, tensor<T> & C){
     tensor<T> d0(Tfirstcoeff(d));

@@ -660,6 +660,19 @@ namespace giac {
   gen undeferr(const string & s){
     //dbg_printf("undeferr %s\n",s.c_str());
     //wait_1ms(1);
+#ifdef TICE
+    // Interrupted (ON), every operation of a running algorithm returns an error: one shared copy.
+    // A polynomial division went on with a new error string for each coefficient, filled memory
+    // and the app quit to TI-OS (ON during a long simplification, 2026-10-07)
+    if (interrupted){
+      static gen * stopped=0;
+      if (!stopped){
+        stopped=new gen(string2gen("// "+s,false));
+        stopped->subtype=-1;
+      }
+      return *stopped;
+    }
+#endif
     gen res(string2gen("// "+s,false));
     res.subtype=-1;
     return res;
