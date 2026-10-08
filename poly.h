@@ -1268,8 +1268,12 @@ namespace giac {
     index_m ishift(dim);
     tensor<T> b0(Tfirstcoeff(other));
     for (int i=m;i>=n;--i){
-      if (ctrl_c || interrupted)
+      if (ctrl_c || interrupted){
+        // stopped: an empty remainder ends the callers' remainder sequences (gcd, egcd, Sturm,
+        // resultant), which looped forever on the unfinished one (rem stays of degree >= n)
+        rem.coord.clear();
         break;
+      }
 #if defined NSPIRE || defined(FXCG) || defined TICE
       a=a*b0;
       quo=quo*b0;
