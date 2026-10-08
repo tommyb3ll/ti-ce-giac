@@ -13,7 +13,7 @@
 namespace xcas {
 #endif // ndef NO_NAMESPACE_XCAS
 
-#ifdef WITH_UNITS
+#ifdef WITH_EQW // (was WITH_UNITS: its #endif says WITH_EQW; without units nothing compiled)
   bool ispnt(const giac::gen & g);
   void check_do_graph(giac::gen & ge,const giac::gen & gs,int do_logo_graph_eqw,const giac::context *) ;
 

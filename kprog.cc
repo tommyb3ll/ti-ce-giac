@@ -10850,6 +10850,22 @@ const mksa_unit __lambda0_unit={1.239841984e-6,1,0,0,0,0,0,0}; // inverse meter-
   static const char _unit_s []="_";
   static define_unary_function_eval_index (112,__unit,&unit,_unit_s);
   define_unary_function_ptr( at_unit ,alias_at_unit ,&__unit);
+  // the parser's unit rules (2_m, x=>_m) call these: no unit is known (x=>_m stores into _m,
+  // 2_m is an error that says so)
+#ifdef USTL
+  ustl::map<const char *, const mksa_unit *,ltstr> & unit_conversion_map(){
+    static ustl::map<const char *, const mksa_unit *,ltstr> m;
+    return m;
+  }
+#else
+  std::map<const char *, const mksa_unit *,ltstr> & unit_conversion_map(){
+    static std::map<const char *, const mksa_unit *,ltstr> m;
+    return m;
+  }
+#endif
+  gen symb_unit(const gen & a,const gen & b,GIAC_CONTEXT){
+    return gensizeerr(gettext("No physical units in this version"));
+  }
 #endif
 
   

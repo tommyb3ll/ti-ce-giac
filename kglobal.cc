@@ -2905,7 +2905,8 @@ extern "C" void Sleep(unsigned int miliSecond);
   // else: -> else [nothing in stack]
   // elif ...: -> elif ... then [nothing in stack]
   // try: ... except: ...
-#ifdef FLOWCE // FlowCE has no Python syntax: input is never translated (python2xcas was 24 KB)
+#if defined FLOWCE && defined WITH_UNITS // FlowCE with units has no Python syntax: input is never
+  // translated (python2xcas is 28 KB: units and Python do not both fit)
   std::string python2xcas(const std::string & s_orig,GIAC_CONTEXT){
     return s_orig;
   }
