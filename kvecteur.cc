@@ -1787,7 +1787,7 @@ namespace giac {
     }
     int nbits=45;
     rprec = 37;
-    vecteur v_accurate(*evalf_double(v,1,contextptr)._VECTptr);
+    vecteur v_accurate(gen2vecteur(evalf_double(v,1,contextptr)));
     if (crystalball.empty()){
       in_proot(v,eps,rprec,crystalball,true,contextptr);
       // CERR << crystalball << "\n";
@@ -5506,9 +5506,9 @@ namespace giac {
       P[i][i]=1;
     if (modulo<0){
 #ifdef HAVE_LIBMPFR
-      matrice2std_matrix_gen(*evalf(gen(M),1,contextptr)._VECTptr,H);
+      matrice2std_matrix_gen(gen2vecteur(evalf(gen(M),1,contextptr)),H);
 #else
-      matrice2std_matrix_gen(*evalf_double(gen(M),1,contextptr)._VECTptr,H);
+      matrice2std_matrix_gen(gen2vecteur(evalf_double(gen(M),1,contextptr)),H);
 #endif
     }
     else

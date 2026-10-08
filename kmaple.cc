@@ -1576,7 +1576,7 @@ namespace giac {
     if (!is_zero(derive(m,n,contextptr)))
       return symb_seqsolve(args);
     if (has_num_coeff(m))
-      m=*evalf(m,1,contextptr)._VECTptr;
+      m=gen2vecteur(evalf(m,1,contextptr));
     matrice P,Pinv,D;
     bool b=complex_mode(contextptr);
     complex_mode(true,contextptr);

@@ -6568,7 +6568,7 @@ double my_tan(double arg){
     }
     /* old code, changed for floor(sqrt(2))
     vecteur l(lidnt(args));
-    vecteur lnew=*evalf(l,1,contextptr)._VECTptr;
+    vecteur lnew=gen2vecteur(evalf(l,1,contextptr));
     gen tmp=subst(args,l,lnew,false,contextptr);
     */
     vecteur l(lvar(args));

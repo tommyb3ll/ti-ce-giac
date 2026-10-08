@@ -830,7 +830,7 @@ namespace giac {
     }
 #ifndef XLIGHT //3d
     if (g.type==_VECT && g.subtype==_POINT__VECT && g._VECTptr->size()==3){
-      vecteur v=*evalf_double(g,1,contextptr)._VECTptr;
+      vecteur v=gen2vecteur(evalf_double(g,1,contextptr));
       if (v[2].type==_CPLX)
 	v[2]=abs(v[2],contextptr);
       if (v[0].type==_DOUBLE_ && v[1].type==_DOUBLE_ && v[2].type==_DOUBLE_ ){

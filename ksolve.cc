@@ -860,7 +860,7 @@ namespace giac {
 	if (debug_infolevel) // abs_calc_mode(contextptr)!=38)
 	  LOGMSG << gettext("Warning! Algebraic extension not implemented yet for poly ") << r2sym(w,lv,contextptr) << "\n";
 	gen w_orig;
-	w=*evalf((w_orig=r2sym(w,lv,contextptr)),1,contextptr)._VECTptr;
+	w=gen2vecteur(evalf((w_orig=r2sym(w,lv,contextptr)),1,contextptr));
 	if (has_num_coeff(w)){ // FIXME: test is always true...
 #ifndef NO_STDEXCEPT
 	  try {
@@ -5761,7 +5761,7 @@ namespace giac {
     bool convertapprox=has_num_coeff(eq);
     gen eqs=eq;
     if (convertapprox)
-      eq=*exact(evalf(eq,1,contextptr),contextptr)._VECTptr;
+      eq=gen2vecteur(exact(evalf(eq,1,contextptr),contextptr));
     // check rational
     int varn=0;
     for (it=var.begin();it!=itend;++it,++varn){

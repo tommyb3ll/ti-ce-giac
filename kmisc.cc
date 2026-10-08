@@ -4709,12 +4709,12 @@ static define_unary_function_eval (__variance,&_variance,_variance_s);
     if (ckmatrix(v)){
       int s=int(v.front()._VECTptr->size());
       if (s==1)
-	w=*evalf_double(mtran(v)[0],1,contextptr)._VECTptr;
+	w=gen2vecteur(evalf_double(mtran(v)[0],1,contextptr));
       else
 	return vector<double>(0);
     }
     else
-      w=*evalf_double(v,1,contextptr)._VECTptr;
+      w=gen2vecteur(evalf_double(v,1,contextptr));
     // vector will be sorted keeping only DOUBLE data
     int s=int(w.size());
     vector<double> w1;

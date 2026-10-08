@@ -1538,7 +1538,7 @@ namespace giac {
   static gen branch_evalf(const gen & g,GIAC_CONTEXT){
     if (is_undef(g)) 
       return g;
-    vecteur v(*_lname(evalf(g,1,contextptr),contextptr)._VECTptr);
+    vecteur v(gen2vecteur(_lname(evalf(g,1,contextptr),contextptr)));
     gen gg(g);
     int s=int(v.size());
     for (int i=0;i<s;++i){
