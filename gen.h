@@ -104,10 +104,11 @@ namespace giac {
   size_t freeslotmem();
 #define NBYTES_INT (SIZEOF_INT*8)
   
-  const int ALLOC11=12*NBYTES_INT; // symbolic 24*12=288*11 
-  const int ALLOC15=12*NBYTES_INT; // vecteur 24*12=288*15 
-  const int ALLOC16=12*NBYTES_INT; // complex 24*12=288*16 
-  const int ALLOC36=12*NBYTES_INT; // eqwdata 24*12=288*36 total 288*78=22.5Ko
+  // 256 slots per pool: a slot number is a byte (kgen.cc, small_pool)
+  const int ALLOC11=256; // symbolic 256*11
+  const int ALLOC15=256; // vecteur 256*15
+  const int ALLOC16=256; // complex 256*16
+  const int ALLOC36=256; // eqwdata 256*36, total 256*78=19.5Ko
 
 #ifdef USE_GMP_REPLACEMENTS
 #undef HAVE_GMPXX_H
@@ -549,6 +550,11 @@ namespace giac {
     bool quoted() const ;
     inline bool operator ==(const unary_function_ptr & u) const { 
       // if (&u==this) return true; 
+#if defined(TICE) && !defined(HOSTGIAC) // (24-bit pointers only)
+      // equal but for bit 23 (the quoted flag): the difference is 0 or 2^23 (modulo 2^24). One
+      // helper call (and) instead of two (xor, and): on the eZ80 they are ~1% of a calculation
+      return (((size_t)_ptr-(size_t)u._ptr)<<1)==0;
+#endif
       return ((ulonglong)(_ptr) & 0x7fffff )  == ((ulonglong)( u._ptr) & 0x7fffff );
 #ifdef x86_64
       //return ((ulonglong)(_ptr) & 0xfffffffffffffffc)  == ((ulonglong)( u._ptr) & 0xfffffffffffffffc ); 
@@ -559,6 +565,9 @@ namespace giac {
     inline bool operator !=(const unary_function_ptr & u) const { return !(*this==u); }
     inline bool operator ==(const unary_function_ptr * u) const { 
       // if (&u==this) return true; 
+#if defined(TICE) && !defined(HOSTGIAC)
+      return u && *this==*u;
+#endif
       return u && ( ((ulonglong)(_ptr) & 0x7fffff ) == ((ulonglong)(u->_ptr) & 0x7fffff) ); 
 #ifdef x86_64
       //return u && ( ((ulonglong)(_ptr) & 0xfffffffffffffffc) == ((ulonglong)(u->_ptr) & 0xfffffffffffffffc) ); 
