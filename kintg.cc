@@ -3083,6 +3083,12 @@ namespace giac {
     return limit(F,*x._IDNTptr,b,dir,contextptr);
   }
 #endif
+  // the exact value tmp and the numeric one tmp2 agree (tol: what 32-bit floats add)
+  static bool ck_agree(const gen & tmp,const gen & tmp2,double tol,GIAC_CONTEXT){
+    return (tmp2.type!=_DOUBLE_ && tmp2.type!=_CPLX) ||
+      (abs(tmp,contextptr)._DOUBLE_val<1e-8 && abs(tmp2,contextptr)._DOUBLE_val<1e-8) ||
+      abs(tmp-tmp2,contextptr)._DOUBLE_val<=1e-3*abs(tmp2,contextptr)._DOUBLE_val+tol;
+  }
   gen ck_int_numerically(const gen & f,const gen & x,const gen & a,const gen &b,const gen & exactvalue,GIAC_CONTEXT){
     if (is_inf(a) || is_inf(b))
       return exactvalue;
@@ -3112,17 +3118,6 @@ namespace giac {
     if (debug_infolevel)
       LOGMSG << gettext("Checking exact value of integral with numeric approximation")<<"\n";
     gen tmp2;
-#ifdef TICE
-    // (DeltaCE) 32-bit floats do not reach 1e-6 on a sum of 15 values: the adaptive integration
-    // cut an integrable singularity (x^(-1/3) at 0, sqrt(1-x^2) at 1) into 1024 parts before giving
-    // up (20 to 30 s, then the exact value unchecked). The check below needs 1e-3: 1e-4 and 32
-    // parts at most
-    if (!tegral(f,x,a,b,1e-4,(1<<5),tmp2,true,contextptr))
-#else
-    if (!tegral(f,x,a,b,1e-6,(1<<10),tmp2,true,contextptr))
-#endif
-      return exactvalue;
-    tmp2=evalf_double(tmp2,1,contextptr);
     double tol=0;
 #ifdef TICE
     // 32-bit floats: tmp2 is good to ~1e-6 of the size of f on [a,b] (the integral of x^3-2x
@@ -3136,12 +3131,25 @@ namespace giac {
     }
     const gen ba=evalf_double(b-a,1,contextptr);
     tol*=ba.type==_DOUBLE_?1e-5*std::abs(ba._DOUBLE_val):0;
-#endif
-    if ( (tmp2.type!=_DOUBLE_ && tmp2.type!=_CPLX) ||
-	 (abs(tmp,contextptr)._DOUBLE_val<1e-8 && abs(tmp2,contextptr)._DOUBLE_val<1e-8) ||
-	 abs(tmp-tmp2,contextptr)._DOUBLE_val<=1e-3*abs(tmp2,contextptr)._DOUBLE_val+tol
-	 )
+    // (DeltaCE) 32-bit floats do not reach 1e-6 on a sum of 15 values: the adaptive integration
+    // cut an integrable singularity (x^(-1/3) at 0, sqrt(1-x^2) at 1) into 1024 parts before giving
+    // up (20 to 30 s, then the exact value unchecked). The check below needs 1e-3: 1e-4 and 32
+    // parts at most first; a value that disagrees is checked again as before, 1e-6 and 1024 parts
+    // (32 parts were 2e-3 off at the kink of |6/x+3| on [-4,-1]: the exact 3 came with 3.00628)
+    for (int pass=0;pass<2;++pass){
+      if (!tegral(f,x,a,b,pass?1e-6:1e-4,pass?(1<<10):(1<<5),tmp2,true,contextptr))
+	return exactvalue;
+      tmp2=evalf_double(tmp2,1,contextptr);
+      if (ck_agree(tmp,tmp2,tol,contextptr))
+	return simplifier(exactvalue,contextptr);
+    }
+#else
+    if (!tegral(f,x,a,b,1e-6,(1<<10),tmp2,true,contextptr))
+      return exactvalue;
+    tmp2=evalf_double(tmp2,1,contextptr);
+    if (ck_agree(tmp,tmp2,tol,contextptr))
       return simplifier(exactvalue,contextptr);
+#endif
     LOGMSG << gettext("Error while checking exact value with approximate value, returning both!") << "\n";
     return makevecteur(exactvalue,tmp2);
   }
