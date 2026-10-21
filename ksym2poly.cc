@@ -3780,7 +3780,8 @@ namespace giac {
       e=b._SYMBptr->feuille._VECTptr->back(); b=b._SYMBptr->feuille._VECTptr->front();
     }
     vecteur l=lvar(b);
-    if (depth<6 && l.size()==1 && l.front().type==_IDNT){
+    // (a root's polynomial stays whole: sqrt(1-x^2), not sqrt(x+1)*sqrt(1-x), in d/dx asin(x)-acos(x))
+    if (depth<6 && l.size()==1 && l.front().type==_IDNT && e.type==_INT_){
       const gen x=l.front(),c=_coeff(makesequence(b,x),contextptr);
       gen r;
       if (c.type==_VECT && rational_root(*c._VECTptr,r)){ // q x - p, then the quotient's factors
