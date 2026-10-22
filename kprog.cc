@@ -4823,7 +4823,7 @@ namespace giac {
   static define_unary_function_eval_quoted (__rmbreakpoint,&_rmbreakpoint,_rmbreakpoint_s);
   define_unary_function_ptr5( at_rmbreakpoint ,alias_at_rmbreakpoint,&__rmbreakpoint,_QUOTE_ARGUMENTS,true);
 
-#ifdef FLOWCE
+#if defined FLOWCE && !defined FLOWCE_KHICAS // (the KhiCAS-like build has KhiCAS's debugger)
   // (DeltaCE) no step-by-step debugger: the calculator has no program editor to show it in (and
   // its screen was KhiCAS's); debug(...) runs the program as it is
   void debug_loop(gen &res,GIAC_CONTEXT){}
