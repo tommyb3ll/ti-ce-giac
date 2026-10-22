@@ -64,6 +64,11 @@ void print_alpha_shift(int keyflag);
 void insert(string & s,int pos,const char * add);
 #endif
 
+#ifdef FLOWCE_KHICAS
+static const bool KHICAS_MEDIAN=true; // (KhiCAS + Flow: KhiCAS's median, decimal)
+#else
+static const bool KHICAS_MEDIAN=false;
+#endif
 #ifndef NO_NAMESPACE_GIAC
 namespace giac {
 #endif // ndef NO_NAMESPACE_GIAC
@@ -4527,7 +4532,7 @@ static define_unary_function_eval (__variance,&_variance,_variance_s);
 	islesscomplexthanf_sort(v.begin(),v.end());
 	return v[int(std::ceil(v.size()*d))-1]; // v[(v.size()-1)/4];
       }
-      if (d==0.5 && !v.empty()){
+      if (d==0.5 && !v.empty() && !KHICAS_MEDIAN){
         // DeltaCE: the median of exact values exact (3, not 3.0; 5/2): the values sorted by their
         // decimal values, kept as they are (ascsort sorted the decimals)
         const int n=int(v.size());

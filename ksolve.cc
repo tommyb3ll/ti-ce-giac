@@ -2424,7 +2424,11 @@ namespace giac {
       arg1=w;
     }
     if (arg1.type!=_VECT && !is_equal(arg1) && !is_inequation(arg1))
+#ifdef FLOWCE_KHICAS // (KhiCAS + Flow: KhiCAS's warning)
+      *logptr(contextptr) << gettext("Warning, argument is not an equation, solving ") << arg1 << "=0" << "\n";
+#else
       ; // KhiCAS CE: no "argument is not an equation" warning, solve(x^2-4,x) is normal usage
+#endif
     else {
 #if 1 // ATESTER
       if (arg1.type==_VECT && arg1._VECTptr->size()==2 && v[1].type==_VECT && v[1]._VECTptr->size()==2){
