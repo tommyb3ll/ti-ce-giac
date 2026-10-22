@@ -216,6 +216,11 @@ void sheet_status(tableur & t,GIAC_CONTEXT){
     st += " *";
   else
     st += " -";
+#ifdef FLOWCE_KHICAS
+  if (t.sel_row_begin>=0) st="clear: cancel selection"; // (the TI's key; the whole line fits the bar)
+  else if (t.cmd_row>=0) st="clear: cancel line";
+  if (0)
+#endif
   if (t.sel_row_begin>=0)
     st += (lang==1)?" esc: annule selection":" esc: cancel selection";
   else {
@@ -242,6 +247,124 @@ void sheet_status(tableur & t,GIAC_CONTEXT){
   }
 void waitforvblank(){}
   
+#ifdef FLOWCE_KHICAS
+  // KhiCAS + Flow: the sheet in the Focus look (its keys, menus and command line are KhiCAS's): the
+  // column names on a soft band (the cell's name, or the selection's, at its left), the rows striped
+  // with their numbers at the left, the cell on the accent, a selection on the soft accent; under
+  // them the command line (the cell's name, its formula; editing: the caret, and the cell picked to
+  // be referenced on the soft accent); the menus' names on the Focus bar. Drawn in bands (no blank
+  // frame); typing in the command line repaints its row only.
+  enum { SY0 = 16, SHH = 20, SRH = 20, SROWS = 8, SNW = 40, SCW = 70, SCOLS = 4, SCY = SY0 + SHH + SROWS * SRH, SCB = 218 };
+  // s from x, cut with "..." to maxw pixels
+  static void sheet_text(const ui_face * f, const char * s, int x, int base, int maxw, const unsigned char * r) {
+    int n = strlen(s);
+    if (ui_text_width(f, s, n) > maxw) {
+      const int ew = ui_text_width(f, "...", 3);
+      while (n > 0 && ui_text_width(f, s, n) + ew > maxw) --n;
+      ui_draw_text(f, "...", 3, x + ui_text_width(f, s, n), base, r, 0);
+    }
+    ui_draw_text(f, s, n, x, base, r, 0);
+  }
+  bool sheet_display(tableur &t,GIAC_CONTEXT,bool full_redraw){
+    static const char * const keys[5]={"stat1d","stat2d","sequence","edit","menu"};
+    if (t.disp_row_begin>t.cur_row) t.disp_row_begin=t.cur_row;
+    if (t.disp_row_begin<t.cur_row-SROWS+1) t.disp_row_begin=t.cur_row-SROWS+1;
+    if (t.disp_col_begin>t.cur_col) t.disp_col_begin=t.cur_col;
+    if (t.disp_col_begin<t.cur_col-SCOLS+1) t.disp_col_begin=t.cur_col-SCOLS+1;
+    const bool has_sel=t.sel_row_begin>=0 && t.sel_row_begin<t.nrows,has_cmd=t.cmd_row>=0 && t.cmd_row<t.nrows;
+    int sel_r=t.sel_row_begin,sel_R=t.cur_row,sel_c=t.sel_col_begin,sel_C=t.cur_col;
+    if (sel_r>sel_R) swapint(sel_r,sel_R);
+    if (sel_c>sel_C) swapint(sel_c,sel_C);
+    const bool editing=has_cmd && t.cmd_pos>=0 && t.cmd_pos<=int(t.cmdline.size());
+    const bool minimal=!full_redraw && !has_sel && editing && t.cmd_row==t.cur_row && t.cmd_col==t.cur_col;
+    const int I=giac::giacmin(giac::giacmin(t.nrows,int(t.m.size())),t.disp_row_begin+SROWS),J=giac::giacmin(t.ncols,t.disp_col_begin+SCOLS);
+    std::string * cs=0; // the cells' texts, printed once
+    if (!minimal){
+      cs=new std::string[SROWS*SCOLS];
+      for (int i=t.disp_row_begin;i<I;++i){
+        gen g=t.m[i];
+        if (g.type!=_VECT){ delete[] cs; return false; }
+        vecteur & v=*g._VECTptr;
+        for (int j=t.disp_col_begin;j<J && j<int(v.size());++j){
+          gen vj=v[j];
+          if (vj.type<_IDNT) vj=makevecteur(vj,vj,0);
+          if (vj.type!=_VECT || vj._VECTptr->size()!=3) continue;
+          const bool iscur=i==t.cur_row && j==t.cur_col;
+          if (iscur && !has_cmd) t.cmdline=(*vj._VECTptr)[0].print(contextptr);
+          const gen & content=(*vj._VECTptr)[1];
+          std::string & s=cs[(i-t.disp_row_begin)*SCOLS+j-t.disp_col_begin];
+          s=taille(content,32)>=32?"...":content.print(contextptr);
+          if (iscur && !has_sel && t.cmd_row<0 && ui_text_width(&ui_tr12,s.c_str(),-1)>SCW-9)
+            statuslinemsg(s.c_str()); // (as KhiCAS: a value too wide, whole in the status line)
+        }
+      }
+      focus_bar_tabs(keys,-1);
+    }
+    // the command line: the edited cell's name, its text scrolled to keep the caret (and the
+    // reference after it) in view
+    const std::string name=editing?printcell(t.cmd_row,t.cmd_col):printcell(t.cur_row,t.cur_col);
+    std::string ref;
+    if (editing){
+      if (has_sel) ref=printsel(sel_r,sel_c,sel_R,sel_C);
+      else if (t.cmd_row!=t.cur_row || t.cmd_col!=t.cur_col) ref=printcell(t.cur_row,t.cur_col);
+    }
+    const char * cl=t.cmdline.c_str();
+    const int cn=t.cmdline.size(),cp=editing?t.cmd_pos:cn,nx=14+ui_text_width(&ui_tb12,name.c_str(),-1);
+    const int rw=ref.empty()?0:ui_text_width(&ui_tr12,ref.c_str(),-1)+10,tail=ui_text_width(&ui_tr12,cl,cp)+4+rw;
+    const int tx=nx+ui_text_width(&ui_tr12,cl,cn)+rw+4<=UI_W-8?nx:giac::giacmin(nx,UI_W-8-tail);
+    const int y0=minimal?SCY:SY0,rows=ui_band_open(48);
+    for (int b=y0;b<SCB;b+=rows?rows:SCB-y0){
+      const int e=rows && b+rows<SCB?b+rows:SCB;
+      if (rows) ui_band_begin(b,e);
+      else ui_clip(0,b,UI_W,e);
+      ui_fill(0,b,UI_W,e-b,ui_col(0,UC_BG));
+      if (!minimal){
+        ui_fill(0,SY0,UI_W,SHH,ui_col(0,UC_ACCSOFT));
+        const std::string at=has_sel?printsel(sel_r,sel_c,sel_R,sel_C):printcell(t.cur_row,t.cur_col);
+        sheet_text(&ui_tb10,at.c_str(),5,SY0+14,SNW-7,ui_ramp(0,UC_ACC,UC_ACCSOFT));
+        for (int j=t.disp_col_begin;j<J;++j){
+          const char c[2]={char('A'+j),0};
+          ui_draw_text(&ui_tb12,c,1,SNW+(j-t.disp_col_begin)*SCW+(SCW-ui_text_width(&ui_tb12,c,1))/2,SY0+15,ui_ramp(0,UC_ACC,UC_ACCSOFT),0);
+        }
+        for (int i=t.disp_row_begin;i<I;++i){
+          const int r=i-t.disp_row_begin,y=SY0+SHH+r*SRH,bg=r&1?UC_CARD:UC_BG;
+          if (r&1) ui_fill(0,y,UI_W,SRH,ui_col(0,UC_CARD));
+          const std::string rn=print_INT_(i);
+          ui_draw_text(&ui_tr12,rn.c_str(),-1,SNW-8-ui_text_width(&ui_tr12,rn.c_str(),-1),y+15,ui_ramp(0,UC_SUB,bg),0);
+          for (int j=t.disp_col_begin;j<J;++j){
+            const int x=SNW+(j-t.disp_col_begin)*SCW;
+            const bool cur=i==t.cur_row && j==t.cur_col,in=has_sel && sel_r<=i && i<=sel_R && sel_c<=j && j<=sel_C;
+            int cb=bg,ink=UC_INK;
+            if (in){ ui_fill(x,y,SCW,SRH,ui_col(0,UC_ACCSOFT)); cb=UC_ACCSOFT; }
+            if (cur){ ui_rrect(0,x+1,y+1,SCW-2,SRH-2,5,UC_ACC,cb); cb=UC_ACC; ink=UC_ONACC; }
+            sheet_text(&ui_tr12,cs[r*SCOLS+j-t.disp_col_begin].c_str(),x+5,y+15,SCW-9,ui_ramp(0,ink,cb));
+          }
+        }
+      }
+      ui_fill(10,SCY,UI_W-20,1,ui_col(0,UC_LINE)); // (a hairline over it, as over the editor's panel)
+      const int base=SCY+16,tc=editing?UC_INK:UC_SUB;
+      ui_draw_text(&ui_tb12,name.c_str(),-1,6,base,ui_ramp(0,UC_ACC,UC_BG),0);
+      ui_clip(nx-4,b,UI_W,e);
+      int x=tx+ui_draw_text(&ui_tr12,cl,cp,tx,base,ui_ramp(0,tc,UC_BG),0);
+      if (editing){
+        ui_fill(x,base-11,2,14,ui_col(0,UC_ACC)); // the caret
+        x+=4;
+        if (rw){
+          ui_rrect(0,x,base-13,rw-4,17,4,UC_ACCSOFT,UC_BG);
+          ui_draw_text(&ui_tr12,ref.c_str(),-1,x+3,base,ui_ramp(0,UC_INK,UC_ACCSOFT),0);
+          x+=rw;
+        }
+      }
+      ui_draw_text(&ui_tr12,cl+cp,cn-cp,x,base,ui_ramp(0,tc,UC_BG),0);
+      ui_noclip();
+      if (rows) ui_band_end();
+    }
+    ui_noclip();
+    delete[] cs;
+    t.keytooltip=false; // (as KhiCAS's drawing leaves it: no tooltip on the CE)
+    return true;
+  }
+#else
   bool sheet_display(tableur &t,GIAC_CONTEXT,bool full_redraw){
   int disp_rows=(LCD_HEIGHT_PX-STATUS_AREA_PX)/row_height-3;
   int disp_cols=LCD_WIDTH_PX/(col_width+4)-1;
@@ -423,6 +546,7 @@ void waitforvblank(){}
   os_draw_string_small(0,213,COLOR_BLACK,bg,menu.c_str());
   return true;
 }
+#endif
 
 void activate_cmdline(tableur & t){
   if (t.cmd_row==-1){
@@ -984,6 +1108,11 @@ giac::gen sheet(GIAC_CONTEXT){
     xcas::load_sheet(*xcas::sheetptr,"sessionT",contextptr);
   }
   tableur & t=*sheetptr;
+#ifdef FLOWCE_KHICAS
+  // a full-screen view while it runs: cards (menus, confirmations, notes) are drawn over it and it
+  // repaints itself after them; the console is repainted after it
+  struct view_keep { int v; view_keep():v(focus_view){ focus_view=1; } ~view_keep(){ focus_view=v; focus_invalidate(); } } keep;
+#endif
   sheet_eval(t,contextptr,true);
   t.changed=false;
   bool status_freeze=false;
@@ -1005,7 +1134,13 @@ giac::gen sheet(GIAC_CONTEXT){
       statusflags();
       key=getkey(1);
     }
+#ifdef FLOWCE_KHICAS
+    // (typing repaints the command line only; any other key may draw over the sheet: a card, a view)
+    full_redraw=!((key>=32 && key<128) || key==KEY_CTRL_DEL || key==KEY_CTRL_LEFT || key==KEY_CTRL_RIGHT);
+    focus_view=1; // (a graph shown from the sheet gives the screen back to the console when it ends)
+#else
     full_redraw=false;
+#endif
     if (key==KEY_SHUTDOWN || key==KEY_CTRL_QUIT){
       save_sheet_to(t,"session.tab",contextptr);
       return key;
@@ -1264,9 +1399,9 @@ giac::gen sheet(GIAC_CONTEXT){
 	  (key >= KEY_CTRL_F7 && key <= KEY_CTRL_F14) 
 	 ){
 #ifdef WITH_QUAD
-      const char tmenu[]= "F1 stat1d\nstat1d\nsum(\nmean(\nstddev(\nmedian(\nhistogram(\nbarplot(\nboxwhisker(\nF2 stat2d\nscatterplot(\npolygonscatterplot(\nlinear_regression(\nlinear_regression_plot(\nlogarithmic_regression_plot(\nexponential_regression_plot(\nF3 seq\nrange(\nseq(\ntableseq(\nplotseq(\nrandvector(\nrandmatrix(\nF4 edt\n=\nselect\n$\nedit_cell\nundo\ncopy_down\ncopy_right\ninsert_row\ninsert_col\nF6 graph\nreserved\nF= poly\nproot(\npcoeff(\nquo(\nrem(\ngcd(\negcd(\nresultant(\nGF(\nF: arit\nF9 mod \nirem(\nifactor(\ngcd(\nisprime(\nnextprime(\npowmod(\niegcd(\nF8 list\nmakelist(\nrange(\nseq(\nlen(\nappend(\nranv(\nsort(\napply(\nF; plot\nplot(\nplotseq(\nplotlist(\nplotparam(\nplotpolar(\nplotfield(\nhistogram(\nbarplot(\nF7 real\nexact(\napprox(\nfloor(\nceil(\nround(\nsign(\nmax(\nmin(\nF< prog\n:\n&\n#\nhexprint(\nbinprint(\nf(x):=\ndebug(\npython(\nF> cplx\nabs(\narg(\nre(\nim(\nconj(\ncsolve(\ncfactor(\ncpartfrac(\nF= misc\n!\nrand(\nbinomial(\nnormald(\nexponentiald(\n\\\n % \n\n";
+      const char tmenu[]= "F1 stat1d\nstat1d\nsum(\nmean(\nstddev(\nmedian(\nhistogram(\nbarplot(\nboxwhisker(\nF2 stat2d\nscatterplot(\npolygonscatterplot(\nlinear_regression(\nlinear_regression_plot(\nlogarithmic_regression_plot(\nexponential_regression_plot(\nF3 sequence\nrange(\nseq(\ntableseq(\nplotseq(\nrandvector(\nrandmatrix(\nF4 edit\n=\nselect\n$\nedit_cell\nundo\ncopy_down\ncopy_right\ninsert_row\ninsert_col\nF6 graph\nreserved\nF= poly\nproot(\npcoeff(\nquo(\nrem(\ngcd(\negcd(\nresultant(\nGF(\nF: arit\nF9 mod \nirem(\nifactor(\ngcd(\nisprime(\nnextprime(\npowmod(\niegcd(\nF8 list\nmakelist(\nrange(\nseq(\nlen(\nappend(\nranv(\nsort(\napply(\nF; plot\nplot(\nplotseq(\nplotlist(\nplotparam(\nplotpolar(\nplotfield(\nhistogram(\nbarplot(\nF7 real\nexact(\napprox(\nfloor(\nceil(\nround(\nsign(\nmax(\nmin(\nF< prog\n:\n&\n#\nhexprint(\nbinprint(\nf(x):=\ndebug(\npython(\nF> cplx\nabs(\narg(\nre(\nim(\nconj(\ncsolve(\ncfactor(\ncpartfrac(\nF= misc\n!\nrand(\nbinomial(\nnormald(\nexponentiald(\n\\\n % \n\n";
 #else
-      const char tmenu[]= "F1 stat1d\nstat1d\nsum(\nmean(\nstddev(\nmedian(\nhistogram(\nbarplot(\nboxwhisker(\nF2 stat2d\nscatterplot(\npolygonscatterplot(\nlinear_regression(\nlinear_regression_plot(\nlogarithmic_regression_plot(\nexponential_regression_plot(\nF3 seq\nrange(\nseq(\ntableseq(\nplotseq(\ntablefunc(\nrandvector(\nrandmatrix(\nF4 edt\n=\nselect\n$\nedit_cell\nundo\ncopy_down\ncopy_right\ninsert_row\ninsert_col\nF6 graph\nreserved\nF= poly\nproot(\npcoeff(\nquo(\nrem(\ngcd(\negcd(\nresultant(\nGF(\nF: arit\nF9 mod \nirem(\nifactor(\ngcd(\nisprime(\nnextprime(\npowmod(\niegcd(\nF8 list\nmakelist(\nrange(\nseq(\nlen(\nappend(\nranv(\nsort(\napply(\nF; plot\nplot(\nplotseq(\nplotlist(\nplotparam(\nplotpolar(\nplotfield(\nhistogram(\nbarplot(\nF7 real\nexact(\napprox(\nfloor(\nceil(\nround(\nsign(\nmax(\nmin(\nF< prog\n:\n&\n#\nhexprint(\nbinprint(\nf(x):=\ndebug(\npython(\nF> cplx\nabs(\narg(\nre(\nim(\nconj(\ncsolve(\ncfactor(\ncpartfrac(\nF= misc\n!\nrand(\nbinomial(\nnormald(\nexponentiald(\n\\\n % \n\n";
+      const char tmenu[]= "F1 stat1d\nstat1d\nsum(\nmean(\nstddev(\nmedian(\nhistogram(\nbarplot(\nboxwhisker(\nF2 stat2d\nscatterplot(\npolygonscatterplot(\nlinear_regression(\nlinear_regression_plot(\nlogarithmic_regression_plot(\nexponential_regression_plot(\nF3 sequence\nrange(\nseq(\ntableseq(\nplotseq(\ntablefunc(\nrandvector(\nrandmatrix(\nF4 edit\n=\nselect\n$\nedit_cell\nundo\ncopy_down\ncopy_right\ninsert_row\ninsert_col\nF6 graph\nreserved\nF= poly\nproot(\npcoeff(\nquo(\nrem(\ngcd(\negcd(\nresultant(\nGF(\nF: arit\nF9 mod \nirem(\nifactor(\ngcd(\nisprime(\nnextprime(\npowmod(\niegcd(\nF8 list\nmakelist(\nrange(\nseq(\nlen(\nappend(\nranv(\nsort(\napply(\nF; plot\nplot(\nplotseq(\nplotlist(\nplotparam(\nplotpolar(\nplotfield(\nhistogram(\nbarplot(\nF7 real\nexact(\napprox(\nfloor(\nceil(\nround(\nsign(\nmax(\nmin(\nF< prog\n:\n&\n#\nhexprint(\nbinprint(\nf(x):=\ndebug(\npython(\nF> cplx\nabs(\narg(\nre(\nim(\nconj(\ncsolve(\ncfactor(\ncpartfrac(\nF= misc\n!\nrand(\nbinomial(\nnormald(\nexponentiald(\n\\\n % \n\n";
 #endif
       const char * s=console_menu(key,(char *)tmenu,0);
       full_redraw=true;

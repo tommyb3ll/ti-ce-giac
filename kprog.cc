@@ -32,6 +32,7 @@ extern "C" {
 #include "k_csdk.h"
 #include "main.h" // for freeze
 #include "console.h" // draw_line
+#include "focus.h" // (KhiCAS + Flow: focus_debug)
 #endif
 #include <stdexcept>
 #include <cmath>
@@ -4874,6 +4875,59 @@ namespace giac {
       }
     }
     w.push_back(dw);
+#ifdef FLOWCE_KHICAS
+    // KhiCAS + Flow: the same screen in the Focus look (focus_menu.cc): the program's lines from the
+    // current one - 2 to + 3, the watched variables as KhiCAS lays them out
+    bool save_freeze=freeze;
+    freeze=true;
+    string evals,breaks;
+    {
+      vector<string> pl,wl;
+      int pcur=-1;
+      if (w[4].type==_INT_){
+        vector<string> ws;
+        ws.push_back("");
+        debug_print(w[2],ws,contextptr);
+        int m=giacmax(0,w[4].val-2),M=giacmin(w[4].val+3,ws.size()-1);
+        if (M-m<5)
+          M=giacmin(m+5,ws.size()-1);
+        if (M-m<5)
+          m=giacmax(0,M-5);
+        for (int i=m;i<=M;++i){
+          if (!i && ws[0].empty()) continue; // (KhiCAS's line 0 is always empty)
+          if (i==w[4].val) pcur=pl.size();
+          pl.push_back(print_INT_(i)+":"+ws[i]);
+        }
+      }
+      else
+        pl.push_back("prg: "+w[2].print(contextptr)+" # "+w[4].print(contextptr));
+      debug_ptr(contextptr)->debug_allowed=false;
+      iterateur it=dw.begin(),itend=dw.end();
+      int nvars=itend-it;
+      bool fewvars=nvars<4;
+      for (int nv=0;it!=itend;++nv,++it){
+        evals += it->print(contextptr)+"=";
+        gen tmp=protecteval(*it,1,contextptr);
+        string s=tmp.print(contextptr);
+        if (!fewvars && s.size()>17)
+          s=s.substr(0,14)+"...";
+        evals += s+",";
+        if (fewvars || (nv % 2)==1 || nv==nvars-1){
+          wl.push_back(evals);
+          evals="";
+        }
+        else
+          evals += " | ";
+      }
+      if (!evals.empty())
+        wl.push_back(evals);
+      evals="";
+      vector<const char *> lp(pl.size()),wp(wl.size()+1);
+      for (size_t k=0;k<pl.size();++k) lp[k]=pl[k].c_str();
+      for (size_t k=0;k<wl.size();++k) wp[k]=wl[k].c_str();
+      focus_debug(&lp.front(),pl.size(),pcur,&wp.front(),wl.size());
+    }
+#else
     //Bdisp_AllClr_VRAM();
     os_fill_rect(0,STATUS_AREA_PX-2,LCD_WIDTH_PX,LCD_HEIGHT_PX+2-STATUS_AREA_PX,COLOR_WHITE);
     bool save_freeze=freeze;
@@ -4955,6 +5009,7 @@ namespace giac {
     }
     dispy=C58;
     PrintMini(dispx,dispy,(const Char *)"    next    |  step in    |  continue   |  kill   ",MINI_REV);      
+#endif
     w.push_back(dw);
     debug_ptr(contextptr)->debug_allowed=true;
     *dbgptr->debug_info_ptr=w;
