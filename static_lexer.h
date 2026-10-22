@@ -575,7 +575,7 @@
 {"polygone_rempli",0,89,13},
 #endif
 //{"polygonplot",0,9,13},
-#ifdef WITH_SHEET
+#if defined WITH_SHEET && defined WITH_PLOT // (drawn by the plot module: kmisc.cc)
 {"polygonscatterplot",0,9,13},
 #endif
 #if defined WITH_SHEET || defined WITH_STATS
@@ -710,7 +710,7 @@
 #ifndef NOTURTLE
 {"saute",0,89,13},
 #endif
-#ifdef WITH_SHEET
+#if defined WITH_SHEET && defined WITH_PLOT // (drawn by the plot module: kmisc.cc)
 {"scatterplot",0,9,13},
 #endif
 {"sec",0,9,13},

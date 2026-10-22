@@ -2922,7 +2922,7 @@ extern "C" void Sleep(unsigned int miliSecond);
   // else: -> else [nothing in stack]
   // elif ...: -> elif ... then [nothing in stack]
   // try: ... except: ...
-#if defined FLOWCE && (defined WITH_UNITS || defined FLOWCE_STEPS) // FlowCE with units or with
+#if defined FLOWCE && (defined WITH_UNITS || defined FLOWCE_STEPS) && !defined FLOWCE_KHICAS // FlowCE with units or with
   // step-by-step has no Python syntax: input is never translated (python2xcas is 28 KB: units
   // or steps and Python do not both fit)
   std::string python2xcas(const std::string & s_orig,GIAC_CONTEXT){

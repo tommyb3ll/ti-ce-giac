@@ -575,7 +575,7 @@ at_poly2symb,
 at_polygone_rempli,
 #endif
 //at_polygonplot,
-#ifdef WITH_SHEET
+#if defined WITH_SHEET && defined WITH_PLOT // (drawn by the plot module: kmisc.cc)
 at_polygonscatterplot,
 #endif
 #if defined WITH_SHEET || defined WITH_STATS
@@ -710,7 +710,7 @@ at_rref,
 #ifndef NOTURTLE
 at_saute,
 #endif
-#ifdef WITH_SHEET
+#if defined WITH_SHEET && defined WITH_PLOT // (drawn by the plot module: kmisc.cc)
 at_scatterplot,
 #endif
 at_sec,
