@@ -1405,6 +1405,9 @@ giac::gen sheet(GIAC_CONTEXT){
 #endif
       const char * s=console_menu(key,(char *)tmenu,0);
       full_redraw=true;
+#ifdef FLOWCE_KHICAS
+      sheet_display(t,contextptr,true); // (the closed menu gone before what was picked runs: stat1d's card)
+#endif
       if (s && strlen(s)){
 	if (strcmp(s,"select")==0){
           sheet_clip(t);
