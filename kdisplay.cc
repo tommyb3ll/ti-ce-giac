@@ -1601,11 +1601,16 @@ void displaygraph(const giac::gen & ge){
 	if (smallmenu.selection==15)
 	  break;
       }
+      else {
+	gr.update();
+	continue;
+      }
     }
     if (key==KEY_CTRL_EXIT || key==KEY_CTRL_AC || key==KEY_CTRL_MENU)
       break;
     if (key==KEY_CTRL_F1){
       gr.tracemode_set(-1); // object info
+      gr.update();
       continue;
     }
     if (key==KEY_CTRL_F3){
@@ -1618,8 +1623,10 @@ void displaygraph(const giac::gen & ge){
         0};
       const int s=sizeof(tab)/sizeof(char *);
       int choix=select_item(tab,lang==1?"Affichage":"Display",true);
-      if (choix<0 || choix>s)
+      if (choix<0 || choix>s){
+        gr.update();
         continue;
+      }
       if (choix==0)
         gr.zoom(0.7);
       else if (choix==1)
@@ -1639,8 +1646,10 @@ void displaygraph(const giac::gen & ge){
         0};
       const int s=sizeof(tab)/sizeof(char *);
       int choix=select_item(tab,lang==1?"Trace":"Trace",true);
-      if (choix<0 || choix>s)
+      if (choix<0 || choix>s){
+        gr.update();
         continue;
+      }
       if (choix==0){
         if (gr.tracemode & 2)
           gr.tracemode &= ~2;
@@ -1688,8 +1697,10 @@ void displaygraph(const giac::gen & ge){
         0};
       const int s=sizeof(tab)/sizeof(char *);
       int choix=select_item(tab,lang==1?"Deplacer":"Move view",true);
-      if (choix<0 || choix>s)
+      if (choix<0 || choix>s){
+        gr.update();
         continue;
+      }
       if (choix==0){
         gr.show_axes=!gr.show_axes;
         continue;
@@ -4597,6 +4608,17 @@ void displaygraph(const giac::gen & ge){
     y_scale=(LCD_HEIGHT_PX-STATUS_AREA_PX)/(window_ymax-window_ymin);    
   }
 
+  // Cached ticks are already numeric; converting them must not poll Clear.
+  static bool drawing_double(const gen & value,double & result){
+    if (value.type==_INT_)
+      result=value.val;
+    else if (value.type==_DOUBLE_)
+      result=value._DOUBLE_val;
+    else
+      return false;
+    return __builtin_isfinite(result);
+  }
+
   bool Graph2d::findij(const gen & e0,double x_scale,double y_scale,double & i0,double & j0,GIAC_CONTEXT) const {
     if ( (display_mode&0xc00)==0 && e0.type==_CPLX && e0.subtype==3){
       i0=(e0._CPLXptr->_DOUBLE_val-window_xmin)*x_scale;
@@ -5164,9 +5186,10 @@ void displaygraph(const giac::gen & ge){
     double x_scale=LCD_WIDTH_PX/(window_xmax-window_xmin);
     double y_scale=(LCD_HEIGHT_PX-STATUS_AREA_PX)/(window_ymax-window_ymin);
     double i,j;
-    findij(G,x_scale,y_scale,i,j,contextptr);
-    current_i=int(i+.5);
-    current_j=int(j+.5);
+    if (findij(G,x_scale,y_scale,i,j,contextptr)){
+      current_i=int(i+.5);
+      current_j=int(j+.5);
+    }
     python_compat(p,contextptr);
   }
 
@@ -5486,7 +5509,10 @@ void displaygraph(const giac::gen & ge){
 	  gen e1=diametre._VECTptr->front().evalf_double(1,contextptr),e2=diametre._VECTptr->back().evalf_double(1,contextptr);
 	  gen centre=rdiv(e1+e2,2.0,contextptr);
 	  gen e12=e2-e1;
-	  double ex=evalf_double(re(e12,contextptr),1,contextptr)._DOUBLE_val,ey=evalf_double(im(e12,contextptr),1,contextptr)._DOUBLE_val;
+	  double ex,ey;
+          if (!drawing_double(evalf_double(re(e12,contextptr),1,contextptr),ex) ||
+              !drawing_double(evalf_double(im(e12,contextptr),1,contextptr),ey))
+            return;
 	  if (!Mon_image.findij(centre,x_scale,y_scale,i0,j0,contextptr))
 	    return;
 	  gen diam=std::sqrt(ex*ex+ey*ey);
@@ -5803,18 +5829,21 @@ void displaygraph(const giac::gen & ge){
     ui_noclip();
     ui_fill(0,y0-2,LCD_WIDTH_PX,LCD_HEIGHT_PX-y0+2,bg); // from the bottom of the Focus status bar
     double I0,J0;
-    findij(zero,x_scale,y_scale,I0,J0,contextptr); // origin
-    int i_0=round(I0),j_0=round(J0);
+    const bool origin_valid=findij(gen(0.0),x_scale,y_scale,I0,J0,contextptr); // origin (upstream 527ee0b)
+    int i_0=origin_valid?round(I0):0,j_0=origin_valid?round(J0):0;
     if (show_axes){
       vecteur affx=ticks(window_xmin,window_xmax,true),affy=ticks(window_ymin,window_ymax,true);
       const int affxs=affx.size(),affys=affy.size(),grid=ui_col(0,UC_LINE),axis=ui_col(0,UC_SUB);
-      const bool xa=window_ymax>=0 && window_ymin<=0,ya=window_xmax>=0 && window_xmin<=0;
+      const bool xa=origin_valid && window_ymax>=0 && window_ymin<=0,ya=origin_valid && window_xmax>=0 && window_xmin<=0;
+      double v;
       for (int i=0;i<affxs;++i){
-        const int d=int((evalf_double(affx[i],1,contextptr)._DOUBLE_val-window_xmin)*x_scale);
+        if (!drawing_double(affx[i],v)) continue;
+        const int d=int((v-window_xmin)*x_scale);
         if (d>=0 && d<LCD_WIDTH_PX) ui_fill(d,y0,1,vertical_pixels,grid);
       }
       for (int j=0;j<affys;++j){
-        const int d=int((window_ymax-evalf_double(affy[j],1,contextptr)._DOUBLE_val)*y_scale);
+        if (!drawing_double(affy[j],v)) continue;
+        const int d=int((window_ymax-v)*y_scale);
         if (d>=0 && d<vertical_pixels) ui_fill(0,y0+d,LCD_WIDTH_PX,1,grid);
       }
       if (xa) ui_fill(0,y0+j_0,LCD_WIDTH_PX,1,axis);
@@ -5825,7 +5854,7 @@ void displaygraph(const giac::gen & ge){
       int by=xa?y0+j_0+11:(window_ymin>0?LCD_HEIGHT_PX-3:y0+11);
       if (xa && by>LCD_HEIGHT_PX-2) by=y0+j_0-3;
       for (int i=0;i<affxs;++i){
-        const double v=evalf_double(affx[i],1,contextptr)._DOUBLE_val;
+        if (!drawing_double(affx[i],v)) continue;
         const int d=int((v-window_xmin)*x_scale);
         graph_tick_label(ch,v);
         if (ch[0]=='0' && !ch[1] && ya) continue; // the origin: no label
@@ -5836,7 +5865,7 @@ void displaygraph(const giac::gen & ge){
       }
       // y labels left of the y axis (right of it near the left edge)
       for (int j=0;j<affys;++j){
-        const double v=evalf_double(affy[j],1,contextptr)._DOUBLE_val;
+        if (!drawing_double(affy[j],v)) continue;
         const int d=int((window_ymax-v)*y_scale);
         graph_tick_label(ch,v);
         if (ch[0]=='0' && !ch[1]) continue;
